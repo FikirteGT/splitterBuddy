@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/errors/app_exceptions.dart';
-import '../../domain/models/user_profile.dart';
+import 'package:splitterbuddy/core/constants/app_constants.dart';
+import 'package:splitterbuddy/core/errors/app_exceptions.dart';
+import 'package:splitterbuddy/features/authentication/domain/models/user_profile.dart';
 
 class AuthRepository {
   final FirebaseAuth _firebaseAuth;

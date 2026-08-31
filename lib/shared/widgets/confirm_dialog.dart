@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
+import 'package:splitterbuddy/core/constants/app_colors.dart';
 
 class ConfirmDialog extends StatelessWidget {
   final String title;

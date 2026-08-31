@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../shared/widgets/confirm_dialog.dart';
-import '../../../../shared/widgets/custom_button.dart';
-import '../../../../shared/widgets/empty_state_view.dart';
-import '../../../authentication/presentation/controllers/auth_controller.dart';
-import '../controllers/workspace_controller.dart';
-import '../domain/models/workspace.dart';
-import 'create_workspace_screen.dart';
-import 'invite_partner_screen.dart';
-import 'join_workspace_screen.dart';
+import 'package:splitterbuddy/core/constants/app_colors.dart';
+import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
+import 'package:splitterbuddy/features/workspace/presentation/controllers/workspace_controller.dart';
+import 'package:splitterbuddy/features/workspace/domain/models/workspace.dart';
+import 'package:splitterbuddy/features/workspace/presentation/screens/create_workspace_screen.dart';
+import 'package:splitterbuddy/features/workspace/presentation/screens/invite_partner_screen.dart';
+import 'package:splitterbuddy/features/workspace/presentation/screens/join_workspace_screen.dart';
+import 'package:splitterbuddy/shared/widgets/confirm_dialog.dart';
+import 'package:splitterbuddy/shared/widgets/custom_button.dart';
+import 'package:splitterbuddy/shared/widgets/empty_state_view.dart';
 
 class WorkspaceListScreen extends StatelessWidget {
   const WorkspaceListScreen({super.key});

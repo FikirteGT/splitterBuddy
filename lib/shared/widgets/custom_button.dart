@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
+import 'package:splitterbuddy/core/constants/app_colors.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -93,7 +93,7 @@ class CustomButton extends StatelessWidget {
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: effectiveBgColor,
-          disabledBackgroundColor: effectiveBgColor.withOpacity(0.5),
+          disabledBackgroundColor: effectiveBgColor.withValues(alpha: 0.5),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
         ),

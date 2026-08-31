@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../shared/widgets/custom_button.dart';
-import '../../../../shared/widgets/custom_text_field.dart';
-import '../../../authentication/presentation/controllers/auth_controller.dart';
-import '../controllers/workspace_controller.dart';
-import 'invite_partner_screen.dart';
+import 'package:splitterbuddy/core/constants/app_colors.dart';
+import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
+import 'package:splitterbuddy/features/workspace/presentation/controllers/workspace_controller.dart';
+import 'package:splitterbuddy/features/workspace/presentation/screens/invite_partner_screen.dart';
+import 'package:splitterbuddy/shared/widgets/custom_button.dart';
+import 'package:splitterbuddy/shared/widgets/custom_text_field.dart';
 
 class CreateWorkspaceScreen extends StatefulWidget {
   const CreateWorkspaceScreen({super.key});

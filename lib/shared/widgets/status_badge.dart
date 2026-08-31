@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_constants.dart';
+import 'package:splitterbuddy/core/constants/app_colors.dart';
+import 'package:splitterbuddy/core/constants/app_constants.dart';
 
 class StatusBadge extends StatelessWidget {
   final String status;
@@ -47,7 +47,7 @@ class StatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: text.withOpacity(0.3)),
+        border: Border.all(color: text.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,

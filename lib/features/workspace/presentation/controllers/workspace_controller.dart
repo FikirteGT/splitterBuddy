@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../../../../core/errors/app_exceptions.dart';
-import '../data/repositories/workspace_repository.dart';
-import '../domain/models/expense_period.dart';
-import '../domain/models/workspace.dart';
+import 'package:splitterbuddy/core/errors/app_exceptions.dart';
+import 'package:splitterbuddy/features/workspace/data/repositories/workspace_repository.dart';
+import 'package:splitterbuddy/features/workspace/domain/models/expense_period.dart';
+import 'package:splitterbuddy/features/workspace/domain/models/workspace.dart';
 
 class WorkspaceController extends ChangeNotifier {
   final WorkspaceRepository _workspaceRepository;

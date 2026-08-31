@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../shared/widgets/custom_button.dart';
-import '../domain/models/workspace.dart';
+import 'package:splitterbuddy/core/constants/app_colors.dart';
+import 'package:splitterbuddy/features/workspace/domain/models/workspace.dart';
+import 'package:splitterbuddy/shared/widgets/custom_button.dart';
 
 class InvitePartnerScreen extends StatelessWidget {
   final Workspace workspace;
@@ -53,7 +53,7 @@ class InvitePartnerScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.badgeGreenBg,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 2),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2),
                   ),
                   child: const Icon(
                     Icons.share_rounded,
@@ -95,7 +95,7 @@ class InvitePartnerScreen extends StatelessWidget {
                   border: Border.all(color: AppColors.cardBorder, width: 1.5),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
+                      color: Colors.black.withValues(alpha: 0.2),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),

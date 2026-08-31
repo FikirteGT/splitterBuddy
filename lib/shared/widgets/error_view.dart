@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import 'custom_button.dart';
+import 'package:splitterbuddy/core/constants/app_colors.dart';
+import 'package:splitterbuddy/shared/widgets/custom_button.dart';
 
 class ErrorView extends StatelessWidget {
   final String message;

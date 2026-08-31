@@ -1,9 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/errors/app_exceptions.dart';
-import '../../../../core/utils/invite_code_generator.dart';
-import '../domain/models/expense_period.dart';
-import '../domain/models/workspace.dart';
+import 'package:splitterbuddy/core/constants/app_constants.dart';
+import 'package:splitterbuddy/core/errors/app_exceptions.dart';
+import 'package:splitterbuddy/core/utils/invite_code_generator.dart';
+import 'package:splitterbuddy/features/workspace/domain/models/expense_period.dart';
+import 'package:splitterbuddy/features/workspace/domain/models/workspace.dart';
 
 class WorkspaceRepository {
   final FirebaseFirestore _firestore;

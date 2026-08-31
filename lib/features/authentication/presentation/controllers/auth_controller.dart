@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import '../../../../core/errors/app_exceptions.dart';
-import '../../data/repositories/auth_repository.dart';
-import '../../domain/models/user_profile.dart';
+import 'package:splitterbuddy/core/errors/app_exceptions.dart';
+import 'package:splitterbuddy/features/authentication/data/repositories/auth_repository.dart';
+import 'package:splitterbuddy/features/authentication/domain/models/user_profile.dart';
 
 class AuthController extends ChangeNotifier {
   final AuthRepository _authRepository;

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_constants.dart';
-import '../../../../shared/widgets/custom_button.dart';
-import '../../../../shared/widgets/custom_text_field.dart';
-import '../controllers/auth_controller.dart';
-import 'guest_entry_screen.dart';
-import 'sign_up_screen.dart';
+import 'package:splitterbuddy/core/constants/app_colors.dart';
+import 'package:splitterbuddy/core/constants/app_constants.dart';
+import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
+import 'package:splitterbuddy/features/authentication/presentation/screens/guest_entry_screen.dart';
+import 'package:splitterbuddy/features/authentication/presentation/screens/sign_up_screen.dart';
+import 'package:splitterbuddy/shared/widgets/custom_button.dart';
+import 'package:splitterbuddy/shared/widgets/custom_text_field.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -78,7 +78,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
+                            color: AppColors.primary.withValues(alpha: 0.3),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
                           ),

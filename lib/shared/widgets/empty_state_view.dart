@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
-import 'custom_button.dart';
+import 'package:splitterbuddy/core/constants/app_colors.dart';
+import 'package:splitterbuddy/shared/widgets/custom_button.dart';
 
 class EmptyStateView extends StatelessWidget {
   final IconData icon;
@@ -32,7 +32,7 @@ class EmptyStateView extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated.withOpacity(0.5),
+                color: AppColors.surfaceElevated.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.cardBorder),
               ),

@@ -23,7 +23,7 @@ class CurrencyFormatter {
     final sanitized = input.trim().replaceAll(',', '');
     if (sanitized.isEmpty) return null;
     final value = double.tryParse(sanitized);
-    if (value == null || value.isNaN || value.isInfinite) return null;
+    if (value == null || value.isNaN || value.isInfinite || value <= 0) return null;
     // Round to 2 decimal places to prevent floating point drift
     return (value * 100).roundToDouble() / 100.0;
   }

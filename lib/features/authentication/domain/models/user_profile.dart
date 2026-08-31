@@ -21,7 +21,7 @@ class UserProfile {
     String? uid,
     String? displayName,
     String? email,
-    List<String> workspaceIds,
+    List<String>? workspaceIds,
     bool? isAnonymous,
     DateTime? createdAt,
   }) {

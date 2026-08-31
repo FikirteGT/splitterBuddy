@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../shared/widgets/custom_button.dart';
-import '../../../../shared/widgets/custom_text_field.dart';
-import '../controllers/auth_controller.dart';
+import 'package:splitterbuddy/core/constants/app_colors.dart';
+import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
+import 'package:splitterbuddy/shared/widgets/custom_button.dart';
+import 'package:splitterbuddy/shared/widgets/custom_text_field.dart';
 
 class GuestEntryScreen extends StatefulWidget {
   const GuestEntryScreen({super.key});
@@ -66,7 +66,7 @@ class _GuestEntryScreenState extends State<GuestEntryScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.badgeAmberBg,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
