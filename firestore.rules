@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getWorkspace(workspaceId) {
+      return get(/databases/$(database)/documents/workspaces/$(workspaceId));
+    }
+
+    function isWorkspaceMember(workspaceId) {
+      return isAuthenticated() && (request.auth.uid in getWorkspace(workspaceId).data.memberIds);
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isUser(userId);
+      allow delete: if false;
+
+      // Private notifications
+      match /notifications/{notificationId} {
+        allow read, update, delete: if isUser(userId);
+        // Allow other workspace members to create notifications for this user
+        allow create: if isAuthenticated();
+      }
+    }
+
+    // Workspaces collection
+    match /workspaces/{workspaceId} {
+      // Query workspace by invite code (needed for joining) or read if member
+      allow list, get: if isAuthenticated();
+
+      // Create workspace (must set self as owner and only member)
+      allow create: if isAuthenticated() &&
+                    request.resource.data.ownerId == request.auth.uid &&
+                    request.resource.data.memberIds.size() == 1 &&
+                    request.resource.data.memberIds[0] == request.auth.uid;
+
+      // Update workspace (Joining with max 2 members limit or member state updates)
+      allow update: if isAuthenticated() && (
+        // Joining: workspace must have < 2 members, and adding self
+        (resource.data.memberIds.size() < 2 &&
+         request.resource.data.memberIds.size() <= 2 &&
+         request.auth.uid in request.resource.data.memberIds) ||
+        // Existing member updating active period or workspace details
+        (request.auth.uid in resource.data.memberIds)
+      );
+
+      // Only owner can delete workspace
+      allow delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+
+      // Expenses Subcollection
+      match /expenses/{expenseId} {
+        allow read: if isWorkspaceMember(workspaceId);
+        allow create: if isWorkspaceMember(workspaceId) &&
+                      request.resource.data.amount > 0 &&
+                      request.resource.data.description.size() > 0;
+        allow update: if isWorkspaceMember(workspaceId);
+        allow delete: if isWorkspaceMember(workspaceId);
+      }
+
+      // Pending Changes Subcollection (Partner Edit Approvals)
+      match /pendingChanges/{changeId} {
+        allow read, write: if isWorkspaceMember(workspaceId);
+      }
+
+      // Activity Logs Subcollection
+      match /activityLogs/{logId} {
+        allow read, create: if isWorkspaceMember(workspaceId);
+        allow update, delete: if false; // Immutable audit log
+      }
+
+      // Settlements Subcollection
+      match /settlements/{settlementId} {
+        allow read, create: if isWorkspaceMember(workspaceId) &&
+                            request.resource.data.amount > 0;
+        allow update, delete: if false; // Immutable settlement records
+      }
+
+      // Expense Periods Subcollection
+      match /periods/{periodId} {
+        allow read, create, update: if isWorkspaceMember(workspaceId);
+        allow delete: if false;
+      }
+    }
+  }
+}
