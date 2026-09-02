@@ -166,6 +166,9 @@ class WorkspaceController extends ChangeNotifier {
         userId: userId,
         userName: userName,
       );
+      if (!_workspaces.any((w) => w.id == ws.id)) {
+        _workspaces = [..._workspaces, ws];
+      }
       selectWorkspace(ws);
       _isLoading = false;
       notifyListeners();

@@ -15,9 +15,9 @@ class InviteCodeGenerator {
     ).join();
   }
 
-  /// Normalizes and validates a user-entered invite code.
+  /// Normalizes a user-entered invite code by trimming, removing whitespace and hyphens, and uppercasing.
   static String normalize(String code) {
-    return code.trim().toUpperCase();
+    return code.replaceAll(RegExp(r'[\s\-]'), '').toUpperCase();
   }
 
   static bool isValidFormat(String code) {

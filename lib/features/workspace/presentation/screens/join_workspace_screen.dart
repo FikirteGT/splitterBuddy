@@ -32,7 +32,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
     final wsController = context.read<WorkspaceController>();
 
     final joinedWs = await wsController.joinWorkspace(
-      inviteCode: _codeController.text.trim().toUpperCase(),
+      inviteCode: _codeController.text.trim(),
       userId: auth.uid,
       userName: auth.displayName,
     );
@@ -104,7 +104,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
                             ),
                             SizedBox(height: 4),
                             Text(
-                              'Enter the 6-character code shared by your partner.',
+                              'Enter the invitation code or workspace ID shared by your partner.',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: AppColors.textSecondary,
@@ -120,18 +120,18 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
 
                 CustomTextField(
                   controller: _codeController,
-                  label: '6-Character Invitation Code',
-                  hintText: 'e.g. K9X2MN',
+                  label: 'Invitation Code or Workspace ID',
+                  hintText: 'e.g. K9X2MN or workspace ID',
                   textCapitalization: TextCapitalization.characters,
                   prefixIcon: const Icon(Icons.pin_outlined, size: 20, color: AppColors.textMuted),
                   inputFormatters: [
-                    LengthLimitingTextInputFormatter(6),
-                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]')),
+                    LengthLimitingTextInputFormatter(50),
+                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9\s\-_]')),
                   ],
                   autofocus: true,
                   validator: (val) {
-                    if (val == null || val.trim().isEmpty) return 'Invitation code is required';
-                    if (val.trim().length != 6) return 'Code must be exactly 6 characters';
+                    if (val == null || val.trim().isEmpty) return 'Invitation code or workspace ID is required';
+                    if (val.trim().length < 3) return 'Code must be at least 3 characters';
                     return null;
                   },
                 ),

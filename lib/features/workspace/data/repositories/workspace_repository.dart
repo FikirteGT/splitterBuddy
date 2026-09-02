@@ -98,9 +98,9 @@ class WorkspaceRepository {
       final batch = _firestore.batch();
       batch.set(wsDocRef, workspace.toMap());
       batch.set(periodDocRef, period.toMap());
-      batch.update(_usersRef.doc(ownerId), {
+      batch.set(_usersRef.doc(ownerId), {
         'workspaceIds': FieldValue.arrayUnion([wsDocRef.id]),
-      });
+      }, SetOptions(merge: true));
 
       await batch.commit();
       return workspace;
@@ -114,24 +114,60 @@ class WorkspaceRepository {
     required String userId,
     required String userName,
   }) async {
-    final normalizedCode = InviteCodeGenerator.normalize(inviteCode);
-    if (!InviteCodeGenerator.isValidFormat(normalizedCode)) {
-      throw const WorkspaceException('Invalid invitation code format. Please check and try again.');
+    final rawInput = inviteCode.trim();
+    if (rawInput.isEmpty) {
+      throw const WorkspaceException('Please enter an invitation code or workspace ID.');
     }
 
-    try {
-      // Find workspace by invite code
-      final querySnapshot = await _workspacesRef
-          .where('inviteCode', isEqualTo: normalizedCode)
-          .limit(1)
-          .get();
+    final normalizedCode = InviteCodeGenerator.normalize(rawInput);
 
-      if (querySnapshot.docs.isEmpty) {
-        throw const WorkspaceException('No workspace found with this invitation code.');
+    try {
+      DocumentSnapshot? foundDoc;
+
+      // 1. Try finding workspace by 6-character normalized invite code
+      if (InviteCodeGenerator.isValidFormat(normalizedCode)) {
+        final querySnapshot = await _workspacesRef
+            .where('inviteCode', isEqualTo: normalizedCode)
+            .limit(1)
+            .get();
+
+        if (querySnapshot.docs.isNotEmpty) {
+          foundDoc = querySnapshot.docs.first;
+        }
       }
 
-      final wsDoc = querySnapshot.docs.first;
-      final wsId = wsDoc.id;
+      // 2. If not found by invite code, try looking up directly by Workspace ID (Document ID)
+      if (foundDoc == null && rawInput.isNotEmpty) {
+        final docSnapshot = await _workspacesRef.doc(rawInput).get();
+        if (docSnapshot.exists && docSnapshot.data() != null) {
+          foundDoc = docSnapshot;
+        }
+      }
+
+      // 3. If still not found, try normalized code as Document ID
+      if (foundDoc == null && normalizedCode.isNotEmpty && normalizedCode != rawInput) {
+        final docSnapshot = await _workspacesRef.doc(normalizedCode).get();
+        if (docSnapshot.exists && docSnapshot.data() != null) {
+          foundDoc = docSnapshot;
+        }
+      }
+
+      // 4. If still not found, try searching by workspace name
+      if (foundDoc == null && rawInput.isNotEmpty) {
+        final nameQuery = await _workspacesRef
+            .where('name', isEqualTo: rawInput)
+            .limit(1)
+            .get();
+        if (nameQuery.docs.isNotEmpty) {
+          foundDoc = nameQuery.docs.first;
+        }
+      }
+
+      if (foundDoc == null || !foundDoc.exists) {
+        throw const WorkspaceException('No workspace found with this code. Please check and try again.');
+      }
+
+      final wsId = foundDoc.id;
 
       // Run atomic transaction to verify and add user
       final joinedWorkspace = await _firestore.runTransaction<Workspace>((transaction) async {
@@ -164,9 +200,9 @@ class WorkspaceRepository {
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
-        transaction.update(_usersRef.doc(userId), {
+        transaction.set(_usersRef.doc(userId), {
           'workspaceIds': FieldValue.arrayUnion([wsId]),
-        });
+        }, SetOptions(merge: true));
 
         return Workspace.fromMap({
           ...currentData,
