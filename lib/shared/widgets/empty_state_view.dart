@@ -9,6 +9,9 @@ class EmptyStateView extends StatelessWidget {
   final String? buttonText;
   final VoidCallback? onButtonPressed;
   final IconData? buttonIcon;
+  final String? secondaryButtonText;
+  final VoidCallback? onSecondaryButtonPressed;
+  final IconData? secondaryButtonIcon;
 
   const EmptyStateView({
     super.key,
@@ -18,6 +21,9 @@ class EmptyStateView extends StatelessWidget {
     this.buttonText,
     this.onButtonPressed,
     this.buttonIcon,
+    this.secondaryButtonText,
+    this.onSecondaryButtonPressed,
+    this.secondaryButtonIcon,
   });
 
   @override
@@ -65,7 +71,17 @@ class EmptyStateView extends StatelessWidget {
                 text: buttonText!,
                 onPressed: onButtonPressed,
                 icon: buttonIcon,
-                width: 220,
+                width: 240,
+              ),
+            ],
+            if (secondaryButtonText != null && onSecondaryButtonPressed != null) ...[
+              const SizedBox(height: 12),
+              CustomButton(
+                text: secondaryButtonText!,
+                onPressed: onSecondaryButtonPressed,
+                icon: secondaryButtonIcon,
+                isOutlined: true,
+                width: 240,
               ),
             ],
           ],

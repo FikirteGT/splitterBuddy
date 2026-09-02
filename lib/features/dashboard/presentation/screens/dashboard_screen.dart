@@ -14,6 +14,7 @@ import 'package:splitterbuddy/features/settlement/presentation/screens/settlemen
 import 'package:splitterbuddy/features/workspace/presentation/controllers/workspace_controller.dart';
 import 'package:splitterbuddy/features/workspace/presentation/screens/create_workspace_screen.dart';
 import 'package:splitterbuddy/features/workspace/presentation/screens/invite_partner_screen.dart';
+import 'package:splitterbuddy/features/workspace/presentation/screens/join_workspace_screen.dart';
 import 'package:splitterbuddy/features/workspace/presentation/screens/workspace_list_screen.dart';
 import 'package:splitterbuddy/shared/widgets/empty_state_view.dart';
 
@@ -38,16 +39,34 @@ class DashboardScreen extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(
           title: const Text('SplitterBud'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.group_add_rounded),
+              tooltip: 'Join Workspace',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const JoinWorkspaceScreen()),
+                );
+              },
+            ),
+          ],
         ),
         body: EmptyStateView(
           icon: Icons.home_work_outlined,
           title: "You don't have a workspace yet",
-          subtitle: 'Create a workspace to split shared expenses with your partner, or enter an invitation code.',
+          subtitle: 'Create your own workspace to split shared expenses, or join a friend using their invitation code.',
           buttonText: 'Create Workspace',
           buttonIcon: Icons.add_rounded,
           onButtonPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const CreateWorkspaceScreen()),
+            );
+          },
+          secondaryButtonText: 'Join with Invite Code',
+          secondaryButtonIcon: Icons.login_rounded,
+          onSecondaryButtonPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const JoinWorkspaceScreen()),
             );
           },
         ),
