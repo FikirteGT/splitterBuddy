@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:splitterbuddy/core/constants/app_colors.dart';
 import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
@@ -39,12 +40,21 @@ class _CreateWorkspaceScreenState extends State<CreateWorkspaceScreen> {
 
     if (!mounted) return;
     if (createdWs != null) {
-      // Navigate to Invite Partner Screen
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => InvitePartnerScreen(workspace: createdWs, isNewlyCreated: true),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Workspace "${createdWs.name}" created! Code: ${createdWs.inviteCode}'),
+          backgroundColor: AppColors.success,
+          action: SnackBarAction(
+            label: 'Copy Code',
+            textColor: Colors.white,
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: createdWs.inviteCode));
+            },
+          ),
+          duration: const Duration(seconds: 4),
         ),
       );
+      Navigator.of(context).pop(createdWs);
     } else if (wsController.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
