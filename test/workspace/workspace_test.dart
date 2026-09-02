@@ -12,9 +12,13 @@ void main() {
       expect(code, code.toUpperCase());
     });
 
-    test('InviteCodeGenerator normalizes whitespace and lowercase input', () {
+    test('InviteCodeGenerator normalizes whitespace, hyphens, and lowercase input', () {
       expect(InviteCodeGenerator.normalize('  k9x2mn  '), 'K9X2MN');
+      expect(InviteCodeGenerator.normalize('k9-x2-mn'), 'K9X2MN');
+      expect(InviteCodeGenerator.normalize(' k9 x2 mn '), 'K9X2MN');
       expect(InviteCodeGenerator.isValidFormat('  k9x2mn  '), isTrue);
+      expect(InviteCodeGenerator.isValidFormat('k9-x2-mn'), isTrue);
+      expect(InviteCodeGenerator.isValidFormat(' k9 x2 mn '), isTrue);
       expect(InviteCodeGenerator.isValidFormat('12345'), isFalse); // too short
       expect(InviteCodeGenerator.isValidFormat('1234567'), isFalse); // too long
     });
