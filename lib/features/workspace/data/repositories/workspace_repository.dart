@@ -126,41 +126,49 @@ class WorkspaceRepository {
 
       // 1. Try finding workspace by 6-character normalized invite code
       if (InviteCodeGenerator.isValidFormat(normalizedCode)) {
-        final querySnapshot = await _workspacesRef
-            .where('inviteCode', isEqualTo: normalizedCode)
-            .limit(1)
-            .get();
+        try {
+          final querySnapshot = await _workspacesRef
+              .where('inviteCode', isEqualTo: normalizedCode)
+              .limit(1)
+              .get();
 
-        if (querySnapshot.docs.isNotEmpty) {
-          foundDoc = querySnapshot.docs.first;
-        }
+          if (querySnapshot.docs.isNotEmpty) {
+            foundDoc = querySnapshot.docs.first;
+          }
+        } catch (_) {}
       }
 
-      // 2. If not found by invite code, try looking up directly by Workspace ID (Document ID)
-      if (foundDoc == null && rawInput.isNotEmpty) {
-        final docSnapshot = await _workspacesRef.doc(rawInput).get();
-        if (docSnapshot.exists && docSnapshot.data() != null) {
-          foundDoc = docSnapshot;
-        }
+      // 2. If not found by invite code, try looking up directly by Workspace ID (Document ID) if longer than 6 chars
+      if (foundDoc == null && rawInput.length > 6) {
+        try {
+          final docSnapshot = await _workspacesRef.doc(rawInput).get();
+          if (docSnapshot.exists && docSnapshot.data() != null) {
+            foundDoc = docSnapshot;
+          }
+        } catch (_) {}
       }
 
       // 3. If still not found, try normalized code as Document ID
-      if (foundDoc == null && normalizedCode.isNotEmpty && normalizedCode != rawInput) {
-        final docSnapshot = await _workspacesRef.doc(normalizedCode).get();
-        if (docSnapshot.exists && docSnapshot.data() != null) {
-          foundDoc = docSnapshot;
-        }
+      if (foundDoc == null && normalizedCode.length > 6 && normalizedCode != rawInput) {
+        try {
+          final docSnapshot = await _workspacesRef.doc(normalizedCode).get();
+          if (docSnapshot.exists && docSnapshot.data() != null) {
+            foundDoc = docSnapshot;
+          }
+        } catch (_) {}
       }
 
       // 4. If still not found, try searching by workspace name
       if (foundDoc == null && rawInput.isNotEmpty) {
-        final nameQuery = await _workspacesRef
-            .where('name', isEqualTo: rawInput)
-            .limit(1)
-            .get();
-        if (nameQuery.docs.isNotEmpty) {
-          foundDoc = nameQuery.docs.first;
-        }
+        try {
+          final nameQuery = await _workspacesRef
+              .where('name', isEqualTo: rawInput)
+              .limit(1)
+              .get();
+          if (nameQuery.docs.isNotEmpty) {
+            foundDoc = nameQuery.docs.first;
+          }
+        } catch (_) {}
       }
 
       if (foundDoc == null || !foundDoc.exists) {
@@ -214,6 +222,11 @@ class WorkspaceRepository {
       return joinedWorkspace;
     } on WorkspaceException {
       rethrow;
+    } on FirebaseException catch (e) {
+      if (e.code == 'unavailable') {
+        throw const WorkspaceException('Could not connect to the database. Please check your internet connection and try again.');
+      }
+      throw WorkspaceException('Failed to join workspace: ${e.message ?? e.code}');
     } catch (e) {
       throw WorkspaceException('Failed to join workspace: ${e.toString()}');
     }
