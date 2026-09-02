@@ -33,7 +33,9 @@ class _GuestEntryScreenState extends State<GuestEntryScreen> {
 
     if (!mounted) return;
     if (success) {
-      Navigator.of(context).pop(); // Back to AuthWrapper
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } else if (authController.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

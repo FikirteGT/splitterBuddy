@@ -42,7 +42,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     if (!mounted) return;
     if (success) {
-      Navigator.of(context).pop(); // Back to AuthWrapper which routes to workspace flow
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
     } else if (authController.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

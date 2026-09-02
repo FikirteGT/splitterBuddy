@@ -75,6 +75,7 @@ class AuthController extends ChangeNotifier {
         password: password,
         displayName: displayName,
       );
+      _currentUser = _authRepository.currentUser;
       _userProfile = profile;
       _isLoading = false;
       notifyListeners();
@@ -105,6 +106,7 @@ class AuthController extends ChangeNotifier {
         email: email,
         password: password,
       );
+      _currentUser = _authRepository.currentUser;
       _userProfile = profile;
       _isLoading = false;
       notifyListeners();
@@ -131,6 +133,7 @@ class AuthController extends ChangeNotifier {
       final profile = await _authRepository.signInAnonymously(
         displayName: displayName,
       );
+      _currentUser = _authRepository.currentUser;
       _userProfile = profile;
       _isLoading = false;
       notifyListeners();

@@ -39,7 +39,11 @@ class _SignInScreenState extends State<SignInScreen> {
     );
 
     if (!mounted) return;
-    if (!success && authController.errorMessage != null) {
+    if (success) {
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } else if (authController.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authController.errorMessage!),
