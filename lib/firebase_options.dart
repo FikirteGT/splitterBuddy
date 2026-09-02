@@ -31,46 +31,46 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDemoWebApiKeyForSplitterBudApp123',
-    appId: '1:123456789012:web:abcdef1234567890abcdef',
-    messagingSenderId: '123456789012',
-    projectId: 'splitterbud-v1',
-    authDomain: 'splitterbud-v1.firebaseapp.com',
-    storageBucket: 'splitterbud-v1.appspot.com',
+    apiKey: 'AIzaSyA6rGMuI0fxeCEz41UgAFh9RW4-fTsIXMo',
+    appId: '1:61729307591:web:9951d2e50ca697497137e2',
+    messagingSenderId: '61729307591',
+    projectId: 'splitterbuddy2',
+    authDomain: 'splitterbuddy2.firebaseapp.com',
+    storageBucket: 'splitterbuddy2.firebasestorage.app',
+    measurementId: 'G-S6BX5DCFLX',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDemoAndroidApiKeyForSplitterBudApp',
-    appId: '1:123456789012:android:abcdef1234567890abcdef',
-    messagingSenderId: '123456789012',
-    projectId: 'splitterbud-v1',
-    storageBucket: 'splitterbud-v1.appspot.com',
+    apiKey: 'AIzaSyAObRPyU5PEp5Gakzm2Nb5GYzMwteo2ENM',
+    appId: '1:61729307591:android:91c626b9a0e906be7137e2',
+    messagingSenderId: '61729307591',
+    projectId: 'splitterbuddy2',
+    storageBucket: 'splitterbuddy2.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDemoIosApiKeyForSplitterBudApp123',
-    appId: '1:123456789012:ios:abcdef1234567890abcdef',
-    messagingSenderId: '123456789012',
-    projectId: 'splitterbud-v1',
-    storageBucket: 'splitterbud-v1.appspot.com',
+    apiKey: 'AIzaSyAxyybxZHUXgAXX5KK-TNEoz25NV6yRiks',
+    appId: '1:61729307591:ios:25f214e454f819a57137e2',
+    messagingSenderId: '61729307591',
+    projectId: 'splitterbuddy2',
+    storageBucket: 'splitterbuddy2.firebasestorage.app',
     iosBundleId: 'com.splitterbuddy.splitterbuddy',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDemoMacosApiKeyForSplitterBudApp123',
-    appId: '1:123456789012:ios:abcdef1234567890abcdef',
-    messagingSenderId: '123456789012',
-    projectId: 'splitterbud-v1',
-    storageBucket: 'splitterbud-v1.appspot.com',
+    apiKey: 'AIzaSyAxyybxZHUXgAXX5KK-TNEoz25NV6yRiks',
+    appId: '1:61729307591:ios:25f214e454f819a57137e2',
+    messagingSenderId: '61729307591',
+    projectId: 'splitterbuddy2',
+    storageBucket: 'splitterbuddy2.firebasestorage.app',
     iosBundleId: 'com.splitterbuddy.splitterbuddy',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDemoWindowsApiKeyForSplitterBud123',
-    appId: '1:123456789012:web:abcdef1234567890abcdef',
-    messagingSenderId: '123456789012',
-    projectId: 'splitterbud-v1',
-    authDomain: 'splitterbud-v1.firebaseapp.com',
-    storageBucket: 'splitterbud-v1.appspot.com',
+    apiKey: 'AIzaSyA6rGMuI0fxeCEz41UgAFh9RW4-fTsIXMo',
+    appId: '1:61729307591:web:cebbc8c19301d78c7137e2',
+    messagingSenderId: '61729307591',
+    projectId: 'splitterbuddy2',
+    authDomain: 'splitterbuddy2.firebaseapp.com',
+    storageBucket: 'splitterbuddy2.firebasestorage.app',
+    measurementId: 'G-FRSPTDCKDH',
   );
 }
