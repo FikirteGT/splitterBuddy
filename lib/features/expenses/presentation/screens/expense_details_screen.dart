@@ -4,8 +4,9 @@ import 'package:splitterbuddy/core/constants/app_colors.dart';
 import 'package:splitterbuddy/core/utils/currency_formatter.dart';
 import 'package:splitterbuddy/core/utils/date_formatter.dart';
 import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
-import 'package:splitterbuddy/features/expenses/presentation/controllers/expense_controller.dart';
 import 'package:splitterbuddy/features/expenses/domain/models/expense.dart';
+import 'package:splitterbuddy/features/expenses/domain/models/expense_category.dart';
+import 'package:splitterbuddy/features/expenses/presentation/controllers/expense_controller.dart';
 import 'package:splitterbuddy/features/expenses/presentation/screens/edit_expense_screen.dart';
 import 'package:splitterbuddy/features/workspace/presentation/controllers/workspace_controller.dart';
 import 'package:splitterbuddy/shared/widgets/confirm_dialog.dart';
@@ -57,6 +58,51 @@ class ExpenseDetailsScreen extends StatelessWidget {
     }
   }
 
+  void _showReceiptDialog(BuildContext context, String receiptUrl) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton.filled(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white),
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: IconButton.styleFrom(backgroundColor: Colors.black54),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Image.network(
+                receiptUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (ctx, child, progress) {
+                  if (progress == null) return child;
+                  return const Padding(
+                    padding: EdgeInsets.all(32),
+                    child: CircularProgressIndicator(),
+                  );
+                },
+                errorBuilder: (ctx, error, stackTrace) => Container(
+                  padding: const EdgeInsets.all(24),
+                  color: AppColors.surface,
+                  child: const Text('Failed to load image', style: TextStyle(color: AppColors.error)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
@@ -67,7 +113,10 @@ class ExpenseDetailsScreen extends StatelessWidget {
         ? 'You (${auth.displayName})'
         : (currentWs?.getMemberName(expense.paidBy) ?? 'Partner');
 
-    final fairShare = expense.amount / 2.0;
+    final category = ExpenseCategory.find(expense.category);
+    final members = currentWs?.memberIds ?? [auth.uid];
+    final memberNames = currentWs?.memberNames ?? {auth.uid: auth.displayName};
+    final shares = expense.calculateShares(members);
 
     return Scaffold(
       appBar: AppBar(
@@ -106,7 +155,30 @@ class ExpenseDetailsScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  StatusBadge(status: expense.status),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      StatusBadge(status: expense.status),
+                      if (expense.isRecurring) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.repeat_rounded, size: 12, color: AppColors.secondaryLight),
+                              SizedBox(width: 4),
+                              Text('Recurring', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.secondaryLight)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: 14),
                   Text(
                     expense.description,
@@ -128,6 +200,28 @@ class ExpenseDetailsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
+
+                  // Category Chip
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: category.color.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: category.color.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(category.icon, color: category.color, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          category.name,
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: category.color),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     'Paid by $payerName',
                     style: const TextStyle(
@@ -139,44 +233,122 @@ class ExpenseDetailsScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // 50/50 Breakdown Card
+            // Split Breakdown Card
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '50/50 Split Calculation',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Split Breakdown',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.surfaceElevated,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            expense.splitType,
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primaryLight),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 14),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Total Amount', style: TextStyle(color: AppColors.textSecondary)),
-                        Text(CurrencyFormatter.format(expense.amount), style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Fair Share Each (50%)', style: TextStyle(color: AppColors.textSecondary)),
-                        Text(CurrencyFormatter.format(fairShare), style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primaryLight)),
-                      ],
-                    ),
+                    ...members.map((id) {
+                      final name = (id == auth.uid) ? 'You (${auth.displayName})' : (memberNames[id] ?? 'Partner');
+                      final share = shares[id] ?? 0.0;
+                      final pct = expense.amount > 0 ? (share / expense.amount * 100) : 0.0;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(name, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                            Text(
+                              '${CurrencyFormatter.format(share)} (${pct.toStringAsFixed(0)}%)',
+                              style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
+
+            // Receipt Evidence Card
+            if (expense.hasReceipt) ...[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Receipt Attachment',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 12),
+                      InkWell(
+                        onTap: () => _showReceiptDialog(context, expense.receiptUrl!),
+                        borderRadius: BorderRadius.circular(12),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Stack(
+                            alignment: Alignment.bottomRight,
+                            children: [
+                              Image.network(
+                                expense.receiptUrl!,
+                                height: 160,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (ctx, child, progress) {
+                                  if (progress == null) return child;
+                                  return Container(
+                                    height: 160,
+                                    color: AppColors.surfaceElevated,
+                                    child: const Center(child: CircularProgressIndicator()),
+                                  );
+                                },
+                              ),
+                              Container(
+                                margin: const EdgeInsets.all(8),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.black87,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.fullscreen_rounded, color: Colors.white, size: 16),
+                                    SizedBox(width: 4),
+                                    Text('Tap to View', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+            ],
 
             // Metadata Card
             Card(

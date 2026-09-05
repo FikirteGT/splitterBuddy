@@ -59,6 +59,14 @@ class ExpenseRepository {
     required double amount,
     required String paidBy,
     String? paidByName,
+    String category = AppConstants.categoryOther,
+    String splitType = AppConstants.splitEqual,
+    Map<String, double>? splitDetails,
+    String? splitSingleMemberId,
+    String? receiptUrl,
+    String? receiptPath,
+    bool isRecurring = false,
+    String? recurringTemplateId,
     required String createdBy,
     required String actorName,
     String? partnerId,
@@ -85,6 +93,14 @@ class ExpenseRepository {
         amount: roundedAmount,
         paidBy: paidBy,
         createdBy: createdBy,
+        category: category,
+        splitType: splitType,
+        splitDetails: splitDetails,
+        splitSingleMemberId: splitSingleMemberId,
+        receiptUrl: receiptUrl,
+        receiptPath: receiptPath,
+        isRecurring: isRecurring,
+        recurringTemplateId: recurringTemplateId,
         createdAt: now,
         updatedAt: now,
         status: AppConstants.expenseActive,
@@ -143,6 +159,12 @@ class ExpenseRepository {
     required double newAmount,
     required String newPaidBy,
     String? newPaidByName,
+    String? newCategory,
+    String? newSplitType,
+    Map<String, double>? newSplitDetails,
+    String? newSplitSingleMemberId,
+    String? newReceiptUrl,
+    String? newReceiptPath,
     required String currentUserId,
     required String currentUserName,
     String? partnerId,
@@ -166,12 +188,21 @@ class ExpenseRepository {
         final expDocRef = _expensesRef(workspaceId).doc(expense.id);
         final actDocRef = _activityLogsRef(workspaceId).doc();
 
-        batch.update(expDocRef, {
+        final updateData = <String, dynamic>{
           'description': trimmedDesc,
           'amount': roundedAmount,
           'paidBy': newPaidBy,
+          'category': newCategory ?? expense.category,
+          'splitType': newSplitType ?? expense.splitType,
           'updatedAt': Timestamp.fromDate(now),
-        });
+        };
+
+        if (newSplitDetails != null) updateData['splitDetails'] = newSplitDetails;
+        if (newSplitSingleMemberId != null) updateData['splitSingleMemberId'] = newSplitSingleMemberId;
+        if (newReceiptUrl != null) updateData['receiptUrl'] = newReceiptUrl;
+        if (newReceiptPath != null) updateData['receiptPath'] = newReceiptPath;
+
+        batch.update(expDocRef, updateData);
 
         final resolvedPaidByName = newPaidByName ?? (newPaidBy == currentUserId ? currentUserName : 'Partner');
 

@@ -6,9 +6,12 @@ import 'package:splitterbuddy/core/utils/date_formatter.dart';
 import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:splitterbuddy/features/balance/presentation/widgets/balance_card.dart';
 import 'package:splitterbuddy/features/balance/presentation/widgets/spending_breakdown_card.dart';
+import 'package:splitterbuddy/features/expenses/domain/models/expense_category.dart';
 import 'package:splitterbuddy/features/expenses/presentation/controllers/expense_controller.dart';
 import 'package:splitterbuddy/features/expenses/presentation/screens/add_expense_screen.dart';
+import 'package:splitterbuddy/features/expenses/presentation/screens/all_expenses_screen.dart';
 import 'package:splitterbuddy/features/expenses/presentation/screens/expense_details_screen.dart';
+import 'package:splitterbuddy/features/recurring/presentation/screens/recurring_expenses_screen.dart';
 import 'package:splitterbuddy/features/settlement/presentation/screens/settle_balance_dialog.dart';
 import 'package:splitterbuddy/features/settlement/presentation/screens/settlement_history_screen.dart';
 import 'package:splitterbuddy/features/workspace/presentation/controllers/workspace_controller.dart';
@@ -110,6 +113,24 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.search_rounded),
+            tooltip: 'Search & Filter Expenses',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AllExpensesScreen()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.repeat_rounded),
+            tooltip: 'Recurring Expenses',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const RecurringExpensesScreen()),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.history_edu_rounded),
             tooltip: 'Settlement History',
@@ -243,9 +264,25 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 if (recentExpenses.isNotEmpty)
-                  Text(
-                    '${expController.activeExpenses.length} total',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const AllExpensesScreen()),
+                      );
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(50, 30),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      'See All (${expController.activeExpenses.length})',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primaryLight,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -299,6 +336,7 @@ class DashboardScreen extends StatelessWidget {
                 final payerName = expense.paidBy == auth.uid
                     ? 'You'
                     : currentWs.getMemberName(expense.paidBy);
+                final cat = ExpenseCategory.find(expense.category);
 
                 return Card(
                   margin: const EdgeInsets.only(bottom: 10),
@@ -314,25 +352,41 @@ class DashboardScreen extends StatelessWidget {
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceElevated,
+                        color: cat.color.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(
-                        Icons.shopping_bag_outlined,
-                        color: AppColors.primaryLight,
+                      child: Icon(
+                        cat.icon,
+                        color: cat.color,
                         size: 20,
                       ),
                     ),
-                    title: Text(
-                      expense.description,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            expense.description,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        if (expense.hasReceipt)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4),
+                            child: Icon(Icons.receipt_rounded, size: 14, color: AppColors.textMuted),
+                          ),
+                        if (expense.isRecurring)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4),
+                            child: Icon(Icons.repeat_rounded, size: 14, color: AppColors.primaryLight),
+                          ),
+                      ],
                     ),
                     subtitle: Text(
-                      'Paid by $payerName • ${DateFormatter.formatRelative(expense.createdAt)}',
+                      '${cat.name} • Paid by $payerName • ${DateFormatter.formatRelative(expense.createdAt)}',
                       style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                     ),
                     trailing: Text(

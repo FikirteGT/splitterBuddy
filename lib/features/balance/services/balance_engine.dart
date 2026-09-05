@@ -1,7 +1,6 @@
 import '../../../../core/constants/app_constants.dart';
 import '../../expenses/domain/models/expense.dart';
 import '../domain/models/balance_result.dart';
-import 'split_engine.dart';
 
 /// Pure, deterministic balance engine for flexible shared expense calculations.
 /// Fully backward compatible with V1 50/50 expenses and generalized for V2 splitting.

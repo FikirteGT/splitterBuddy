@@ -1,11 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/errors/app_exceptions.dart';
-import '../../../../core/utils/currency_formatter.dart';
-import '../../../expenses/domain/models/expense.dart';
-import '../../../history/domain/models/activity_log.dart';
-import '../../../notifications/domain/models/app_notification.dart';
-import '../domain/models/recurring_expense.dart';
+import 'package:flutter/foundation.dart';
+import 'package:splitterbuddy/core/constants/app_constants.dart';
+import 'package:splitterbuddy/core/errors/app_exceptions.dart';
+import 'package:splitterbuddy/core/utils/currency_formatter.dart';
+import 'package:splitterbuddy/features/expenses/domain/models/expense.dart';
+import 'package:splitterbuddy/features/history/domain/models/activity_log.dart';
+import 'package:splitterbuddy/features/notifications/domain/models/app_notification.dart';
+import 'package:splitterbuddy/features/recurring/domain/models/recurring_expense.dart';
 
 class RecurringExpenseRepository {
   final FirebaseFirestore _firestore;

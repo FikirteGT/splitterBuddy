@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../../../../core/constants/app_constants.dart';
-import '../../../../core/errors/app_exceptions.dart';
-import '../../expenses/domain/models/expense.dart';
-import '../../recurring/data/repositories/recurring_expense_repository.dart';
-import '../../recurring/domain/models/recurring_expense.dart';
+import 'package:splitterbuddy/core/constants/app_constants.dart';
+import 'package:splitterbuddy/core/errors/app_exceptions.dart';
+import 'package:splitterbuddy/features/expenses/domain/models/expense.dart';
+import 'package:splitterbuddy/features/recurring/data/repositories/recurring_expense_repository.dart';
+import 'package:splitterbuddy/features/recurring/domain/models/recurring_expense.dart';
 
 class RecurringExpenseController extends ChangeNotifier {
   final RecurringExpenseRepository _repository;

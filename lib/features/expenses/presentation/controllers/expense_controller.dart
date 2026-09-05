@@ -8,6 +8,13 @@ import 'package:splitterbuddy/features/expenses/data/repositories/expense_reposi
 import 'package:splitterbuddy/features/expenses/domain/models/expense.dart';
 import 'package:splitterbuddy/features/expenses/domain/models/pending_change.dart';
 
+enum ExpenseSortOption {
+  newest,
+  oldest,
+  highestAmount,
+  lowestAmount,
+}
+
 class ExpenseController extends ChangeNotifier {
   final ExpenseRepository _expenseRepository;
 
@@ -26,6 +33,17 @@ class ExpenseController extends ChangeNotifier {
   String? _partnerId;
   String _partnerName = 'Partner';
 
+  // Search and Filter State
+  String _searchQuery = '';
+  String? _selectedCategory;
+  String? _selectedPayer;
+  String? _selectedSplitType;
+  DateTime? _startDate;
+  DateTime? _endDate;
+  double? _minAmount;
+  double? _maxAmount;
+  ExpenseSortOption _sortOption = ExpenseSortOption.newest;
+
   ExpenseController({ExpenseRepository? expenseRepository})
       : _expenseRepository = expenseRepository ?? ExpenseRepository();
 
@@ -36,6 +54,133 @@ class ExpenseController extends ChangeNotifier {
   BalanceResult get balance => _balance;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  // Search & Filter Getters
+  String get searchQuery => _searchQuery;
+  String? get selectedCategory => _selectedCategory;
+  String? get selectedPayer => _selectedPayer;
+  String? get selectedSplitType => _selectedSplitType;
+  DateTime? get startDate => _startDate;
+  DateTime? get endDate => _endDate;
+  double? get minAmount => _minAmount;
+  double? get maxAmount => _maxAmount;
+  ExpenseSortOption get sortOption => _sortOption;
+
+  bool get hasActiveFilters =>
+      _searchQuery.isNotEmpty ||
+      _selectedCategory != null ||
+      _selectedPayer != null ||
+      _selectedSplitType != null ||
+      _startDate != null ||
+      _endDate != null ||
+      _minAmount != null ||
+      _maxAmount != null ||
+      _sortOption != ExpenseSortOption.newest;
+
+  List<Expense> get filteredExpenses {
+    var list = activeExpenses;
+
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list.where((e) => e.description.toLowerCase().contains(q) || e.category.toLowerCase().contains(q)).toList();
+    }
+
+    if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
+      list = list.where((e) => e.category == _selectedCategory).toList();
+    }
+
+    if (_selectedPayer != null && _selectedPayer!.isNotEmpty) {
+      list = list.where((e) => e.paidBy == _selectedPayer).toList();
+    }
+
+    if (_selectedSplitType != null && _selectedSplitType!.isNotEmpty) {
+      list = list.where((e) => e.splitType == _selectedSplitType).toList();
+    }
+
+    if (_startDate != null) {
+      list = list.where((e) => e.createdAt.isAfter(_startDate!) || e.createdAt.isAtSameMomentAs(_startDate!)).toList();
+    }
+
+    if (_endDate != null) {
+      final endOfDay = DateTime(_endDate!.year, _endDate!.month, _endDate!.day, 23, 59, 59);
+      list = list.where((e) => e.createdAt.isBefore(endOfDay) || e.createdAt.isAtSameMomentAs(endOfDay)).toList();
+    }
+
+    if (_minAmount != null) {
+      list = list.where((e) => e.amount >= _minAmount!).toList();
+    }
+
+    if (_maxAmount != null) {
+      list = list.where((e) => e.amount <= _maxAmount!).toList();
+    }
+
+    switch (_sortOption) {
+      case ExpenseSortOption.oldest:
+        list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        break;
+      case ExpenseSortOption.highestAmount:
+        list.sort((a, b) => b.amount.compareTo(a.amount));
+        break;
+      case ExpenseSortOption.lowestAmount:
+        list.sort((a, b) => a.amount.compareTo(b.amount));
+        break;
+      case ExpenseSortOption.newest:
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+    }
+
+    return list;
+  }
+
+  void setSearchQuery(String query) {
+    _searchQuery = query.trim();
+    notifyListeners();
+  }
+
+  void setCategoryFilter(String? category) {
+    _selectedCategory = category;
+    notifyListeners();
+  }
+
+  void setPayerFilter(String? payerId) {
+    _selectedPayer = payerId;
+    notifyListeners();
+  }
+
+  void setSplitTypeFilter(String? splitType) {
+    _selectedSplitType = splitType;
+    notifyListeners();
+  }
+
+  void setDateRangeFilter(DateTime? start, DateTime? end) {
+    _startDate = start;
+    _endDate = end;
+    notifyListeners();
+  }
+
+  void setAmountRangeFilter(double? min, double? max) {
+    _minAmount = min;
+    _maxAmount = max;
+    notifyListeners();
+  }
+
+  void setSortOption(ExpenseSortOption option) {
+    _sortOption = option;
+    notifyListeners();
+  }
+
+  void resetFilters() {
+    _searchQuery = '';
+    _selectedCategory = null;
+    _selectedPayer = null;
+    _selectedSplitType = null;
+    _startDate = null;
+    _endDate = null;
+    _minAmount = null;
+    _maxAmount = null;
+    _sortOption = ExpenseSortOption.newest;
+    notifyListeners();
+  }
 
   void updateContext({
     required String? workspaceId,
@@ -119,6 +264,14 @@ class ExpenseController extends ChangeNotifier {
     required double amount,
     required String paidBy,
     String? paidByName,
+    String category = AppConstants.categoryOther,
+    String splitType = AppConstants.splitEqual,
+    Map<String, double>? splitDetails,
+    String? splitSingleMemberId,
+    String? receiptUrl,
+    String? receiptPath,
+    bool isRecurring = false,
+    String? recurringTemplateId,
     required String currentUserId,
     required String currentUserName,
     String? partnerId,
@@ -142,6 +295,14 @@ class ExpenseController extends ChangeNotifier {
         amount: amount,
         paidBy: paidBy,
         paidByName: resolvedPaidByName,
+        category: category,
+        splitType: splitType,
+        splitDetails: splitDetails,
+        splitSingleMemberId: splitSingleMemberId,
+        receiptUrl: receiptUrl,
+        receiptPath: receiptPath,
+        isRecurring: isRecurring,
+        recurringTemplateId: recurringTemplateId,
         createdBy: currentUserId,
         actorName: currentUserName,
         partnerId: partnerId,
@@ -168,6 +329,12 @@ class ExpenseController extends ChangeNotifier {
     required double newAmount,
     required String newPaidBy,
     String? newPaidByName,
+    String? newCategory,
+    String? newSplitType,
+    Map<String, double>? newSplitDetails,
+    String? newSplitSingleMemberId,
+    String? newReceiptUrl,
+    String? newReceiptPath,
     required String currentUserId,
     required String currentUserName,
     String? partnerId,
@@ -187,6 +354,12 @@ class ExpenseController extends ChangeNotifier {
         newAmount: newAmount,
         newPaidBy: newPaidBy,
         newPaidByName: resolvedPaidByName,
+        newCategory: newCategory,
+        newSplitType: newSplitType,
+        newSplitDetails: newSplitDetails,
+        newSplitSingleMemberId: newSplitSingleMemberId,
+        newReceiptUrl: newReceiptUrl,
+        newReceiptPath: newReceiptPath,
         currentUserId: currentUserId,
         currentUserName: currentUserName,
         partnerId: partnerId,
