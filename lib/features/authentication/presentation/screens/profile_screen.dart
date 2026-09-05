@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:splitterbuddy/core/constants/app_colors.dart';
+import 'package:splitterbuddy/core/utils/date_formatter.dart';
 import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:splitterbuddy/shared/widgets/confirm_dialog.dart';
 import 'package:splitterbuddy/shared/widgets/custom_button.dart';
@@ -180,16 +181,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
                     ],
+                    if (!isGuest && (profile?.email.isNotEmpty ?? false)) ...[
+                      const Divider(),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.email_outlined, color: AppColors.info),
+                        title: const Text('Email Address', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
+                        subtitle: Text(
+                          profile!.email,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                        ),
+                      ),
+                    ],
                     const Divider(),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.fingerprint_rounded, color: AppColors.secondaryLight),
-                      title: const Text('User ID', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
+                      leading: Icon(
+                        isGuest ? Icons.person_outline_rounded : Icons.verified_user_outlined,
+                        color: isGuest ? AppColors.warning : AppColors.primaryLight,
+                      ),
+                      title: const Text('Account Type', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
                       subtitle: Text(
-                        authController.uid,
-                        style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'monospace'),
+                        isGuest ? 'Guest Session (Local Device)' : 'Verified Email Account',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
                       ),
                     ),
+                    if (profile != null) ...[
+                      const Divider(),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.calendar_today_outlined, color: AppColors.secondaryLight),
+                        title: const Text('Member Since', style: TextStyle(fontSize: 13, color: AppColors.textMuted)),
+                        subtitle: Text(
+                          DateFormatter.formatDateOnly(profile.createdAt),
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: AppColors.textPrimary),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
