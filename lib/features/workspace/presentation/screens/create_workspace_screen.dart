@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:splitterbuddy/core/constants/app_colors.dart';
 import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:splitterbuddy/features/workspace/presentation/controllers/workspace_controller.dart';
-import 'package:splitterbuddy/features/workspace/presentation/screens/invite_partner_screen.dart';
 import 'package:splitterbuddy/shared/widgets/custom_button.dart';
 import 'package:splitterbuddy/shared/widgets/custom_text_field.dart';
 

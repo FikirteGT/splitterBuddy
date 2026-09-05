@@ -16,6 +16,7 @@ class AppColors {
   // Neutral tones (Dark mode first / High contrast)
   static const Color background = Color(0xFF0F172A); // Slate 900
   static const Color surface = Color(0xFF1E293B);    // Slate 800
+  static const Color card = Color(0xFF1E293B);       // Slate 800
   static const Color surfaceElevated = Color(0xFF334155); // Slate 700
   static const Color cardBorder = Color(0xFF334155);
 
