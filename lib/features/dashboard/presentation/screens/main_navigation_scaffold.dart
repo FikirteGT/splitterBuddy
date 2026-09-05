@@ -9,6 +9,7 @@ import 'package:splitterbuddy/features/history/presentation/controllers/history_
 import 'package:splitterbuddy/features/history/presentation/screens/history_screen.dart';
 import 'package:splitterbuddy/features/notifications/presentation/controllers/notification_controller.dart';
 import 'package:splitterbuddy/features/notifications/presentation/screens/notifications_screen.dart';
+import 'package:splitterbuddy/features/recurring/presentation/controllers/recurring_expense_controller.dart';
 import 'package:splitterbuddy/features/settlement/presentation/controllers/settlement_controller.dart';
 import 'package:splitterbuddy/features/workspace/presentation/controllers/workspace_controller.dart';
 
@@ -42,6 +43,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     final historyController = context.read<HistoryController>();
     final notifController = context.read<NotificationController>();
     final settlementController = context.read<SettlementController>();
+    final recurringController = context.read<RecurringExpenseController>();
 
     final user = auth.currentUser;
     if (user != null) {
@@ -55,6 +57,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     if (currentWs != null) {
       historyController.updateWorkspace(currentWs.id);
       settlementController.updateWorkspace(currentWs.id);
+      recurringController.updateWorkspace(currentWs.id);
 
       final partnerId = currentWs.getPartnerId(auth.uid);
       final partnerName = currentWs.getPartnerName(auth.uid);
@@ -65,6 +68,14 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         currentUserId: auth.uid,
         partnerId: partnerId,
         partnerName: partnerName,
+      );
+
+      // Check and process due recurring expenses
+      recurringController.checkAndProcessDue(
+        activePeriodId: currentPeriod?.id ?? currentWs.activePeriodId,
+        currentUserId: auth.uid,
+        currentUserName: auth.displayName,
+        partnerId: partnerId,
       );
     }
   }

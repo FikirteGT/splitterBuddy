@@ -14,6 +14,9 @@ import 'features/history/data/repositories/activity_repository.dart';
 import 'features/history/presentation/controllers/history_controller.dart';
 import 'features/notifications/data/repositories/notification_repository.dart';
 import 'features/notifications/presentation/controllers/notification_controller.dart';
+import 'features/expenses/services/receipt_service.dart';
+import 'features/recurring/data/repositories/recurring_expense_repository.dart';
+import 'features/recurring/presentation/controllers/recurring_expense_controller.dart';
 import 'features/settlement/data/repositories/settlement_repository.dart';
 import 'features/settlement/presentation/controllers/settlement_controller.dart';
 import 'features/workspace/data/repositories/workspace_repository.dart';
@@ -47,13 +50,15 @@ class SplitterBudApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Repositories
+        // Repositories & Services
         Provider<AuthRepository>(create: (_) => AuthRepository()),
         Provider<WorkspaceRepository>(create: (_) => WorkspaceRepository()),
         Provider<ExpenseRepository>(create: (_) => ExpenseRepository()),
         Provider<ActivityRepository>(create: (_) => ActivityRepository()),
         Provider<NotificationRepository>(create: (_) => NotificationRepository()),
         Provider<SettlementRepository>(create: (_) => SettlementRepository()),
+        Provider<RecurringExpenseRepository>(create: (_) => RecurringExpenseRepository()),
+        Provider<ReceiptService>(create: (_) => ReceiptService()),
 
         // Controllers
         ChangeNotifierProvider<AuthController>(
@@ -84,6 +89,11 @@ class SplitterBudApp extends StatelessWidget {
         ChangeNotifierProvider<SettlementController>(
           create: (ctx) => SettlementController(
             settlementRepository: ctx.read<SettlementRepository>(),
+          ),
+        ),
+        ChangeNotifierProvider<RecurringExpenseController>(
+          create: (ctx) => RecurringExpenseController(
+            repository: ctx.read<RecurringExpenseRepository>(),
           ),
         ),
       ],
