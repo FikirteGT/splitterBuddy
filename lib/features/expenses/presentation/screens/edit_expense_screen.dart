@@ -59,18 +59,22 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
       return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
     final auth = context.read<AuthController>();
     final ws = context.read<WorkspaceController>().currentWorkspace;
     final expController = context.read<ExpenseController>();
 
     final partnerId = ws?.getPartnerId(auth.uid);
+    final partnerName = ws?.getPartnerName(auth.uid) ?? 'Partner';
     final isOwnExpense = widget.expense.paidBy == auth.uid || widget.expense.createdBy == auth.uid;
+    final newPaidByName = _selectedPaidBy == auth.uid ? auth.displayName : partnerName;
 
     final success = await expController.editExpense(
       expense: widget.expense,
       newDescription: _descController.text.trim(),
       newAmount: amount,
       newPaidBy: _selectedPaidBy,
+      newPaidByName: newPaidByName,
       currentUserId: auth.uid,
       currentUserName: auth.displayName,
       partnerId: partnerId,
@@ -78,23 +82,37 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
 
     if (!mounted) return;
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
         SnackBar(
-          content: Text(
-            isOwnExpense
-                ? 'Expense updated successfully!'
-                : 'Edit proposal submitted for partner review!',
+          content: Row(
+            children: [
+              Icon(
+                isOwnExpense ? Icons.check_circle_rounded : Icons.pending_actions_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  isOwnExpense
+                      ? 'Expense updated successfully!'
+                      : 'Edit proposal submitted for partner review!',
+                ),
+              ),
+            ],
           ),
           backgroundColor: isOwnExpense ? AppColors.success : AppColors.warning,
-          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
         ),
       );
-      Navigator.of(context).pop();
     } else if (expController.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(expController.errorMessage!),
           backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }

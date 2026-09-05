@@ -51,16 +51,21 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
     final auth = context.read<AuthController>();
     final ws = context.read<WorkspaceController>().currentWorkspace;
     final expController = context.read<ExpenseController>();
 
     final partnerId = ws?.getPartnerId(auth.uid);
+    final partnerName = ws?.getPartnerName(auth.uid) ?? 'Partner';
+    final paidByName = _selectedPaidBy == auth.uid ? auth.displayName : partnerName;
+    final desc = _descController.text.trim();
 
     final success = await expController.addExpense(
-      description: _descController.text.trim(),
+      description: desc,
       amount: amount,
       paidBy: _selectedPaidBy,
+      paidByName: paidByName,
       currentUserId: auth.uid,
       currentUserName: auth.displayName,
       partnerId: partnerId,
@@ -68,19 +73,29 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
     if (!mounted) return;
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Expense added successfully!'),
+      Navigator.of(context).pop();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text('Expense "$desc" added successfully!'),
+              ),
+            ],
+          ),
           backgroundColor: AppColors.success,
-          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
         ),
       );
-      Navigator.of(context).pop();
     } else if (expController.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(expController.errorMessage!),
           backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
         ),
       );
     }
