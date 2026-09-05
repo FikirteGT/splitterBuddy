@@ -58,6 +58,7 @@ class ExpenseRepository {
     required String description,
     required double amount,
     required String paidBy,
+    String? paidByName,
     required String createdBy,
     required String actorName,
     String? partnerId,
@@ -89,6 +90,8 @@ class ExpenseRepository {
         status: AppConstants.expenseActive,
       );
 
+      final resolvedPaidByName = paidByName ?? (paidBy == createdBy ? actorName : 'Partner');
+
       final activityLog = ActivityLog(
         id: actDocRef.id,
         workspaceId: workspaceId,
@@ -98,6 +101,8 @@ class ExpenseRepository {
         expenseId: expDocRef.id,
         expenseDescription: trimmedDesc,
         amount: roundedAmount,
+        paidBy: paidBy,
+        paidByName: resolvedPaidByName,
         timestamp: now,
       );
 
@@ -137,6 +142,7 @@ class ExpenseRepository {
     required String newDescription,
     required double newAmount,
     required String newPaidBy,
+    String? newPaidByName,
     required String currentUserId,
     required String currentUserName,
     String? partnerId,
@@ -167,6 +173,8 @@ class ExpenseRepository {
           'updatedAt': Timestamp.fromDate(now),
         });
 
+        final resolvedPaidByName = newPaidByName ?? (newPaidBy == currentUserId ? currentUserName : 'Partner');
+
         final activityLog = ActivityLog(
           id: actDocRef.id,
           workspaceId: workspaceId,
@@ -177,6 +185,8 @@ class ExpenseRepository {
           expenseDescription: trimmedDesc,
           amount: roundedAmount,
           previousAmount: expense.amount,
+          paidBy: newPaidBy,
+          paidByName: resolvedPaidByName,
           timestamp: now,
         );
         batch.set(actDocRef, activityLog.toMap());
@@ -226,6 +236,8 @@ class ExpenseRepository {
           createdAt: now,
         );
 
+        final resolvedPaidByName = newPaidByName ?? (newPaidBy == currentUserId ? currentUserName : 'Partner');
+
         final activityLog = ActivityLog(
           id: actDocRef.id,
           workspaceId: workspaceId,
@@ -236,6 +248,8 @@ class ExpenseRepository {
           expenseDescription: trimmedDesc,
           amount: roundedAmount,
           previousAmount: expense.amount,
+          paidBy: newPaidBy,
+          paidByName: resolvedPaidByName,
           timestamp: now,
         );
 
@@ -303,6 +317,8 @@ class ExpenseRepository {
         expenseDescription: pendingChange.proposedDescription,
         amount: pendingChange.proposedAmount,
         previousAmount: pendingChange.originalAmount,
+        paidBy: pendingChange.proposedPaidBy,
+        paidByName: pendingChange.proposedPaidBy == reviewerId ? reviewerName : pendingChange.requesterName,
         timestamp: now,
       );
       batch.set(actDocRef, activityLog.toMap());
@@ -356,6 +372,7 @@ class ExpenseRepository {
         expenseId: pendingChange.expenseId,
         expenseDescription: pendingChange.originalDescription,
         amount: pendingChange.originalAmount,
+        paidBy: pendingChange.originalPaidBy,
         timestamp: now,
       );
       batch.set(actDocRef, activityLog.toMap());
@@ -410,6 +427,7 @@ class ExpenseRepository {
         expenseId: expense.id,
         expenseDescription: expense.description,
         amount: expense.amount,
+        paidBy: expense.paidBy,
         timestamp: now,
       );
       batch.set(actDocRef, activityLog.toMap());

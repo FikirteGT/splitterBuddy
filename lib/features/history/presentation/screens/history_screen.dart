@@ -41,63 +41,97 @@ class HistoryScreen extends StatelessWidget {
     IconData icon;
     Color iconColor;
     Color iconBg;
-    String descriptionText;
+    String actionTitle;
+    String? subDetails;
+
+    final amountStr = log.amount != null ? CurrencyFormatter.format(log.amount!) : null;
+    final prevAmountStr = log.previousAmount != null ? CurrencyFormatter.format(log.previousAmount!) : null;
+    final paidByStr = log.paidByName != null && log.paidByName!.isNotEmpty
+        ? 'Paid by ${log.paidByName}'
+        : null;
 
     switch (log.action) {
       case AppConstants.actionAdded:
         icon = Icons.add_circle_outline_rounded;
         iconColor = AppColors.primary;
         iconBg = AppColors.badgeGreenBg;
-        descriptionText = '${log.actorName} added ${log.expenseDescription ?? 'Expense'}'
-            '${log.amount != null ? ' — ${CurrencyFormatter.format(log.amount!)}' : ''}';
+        actionTitle = '${log.actorName} added "${log.expenseDescription ?? 'Expense'}"';
+        final details = <String>[];
+        if (amountStr != null) details.add(amountStr);
+        if (paidByStr != null) details.add(paidByStr);
+        subDetails = details.isNotEmpty ? details.join(' • ') : null;
         break;
+
       case AppConstants.actionEdited:
         icon = Icons.edit_outlined;
         iconColor = AppColors.info;
         iconBg = AppColors.badgeBlueBg;
-        if (log.previousAmount != null && log.amount != null && log.previousAmount != log.amount) {
-          descriptionText = '${log.actorName} edited ${log.expenseDescription ?? 'Expense'}: '
-              '${CurrencyFormatter.format(log.previousAmount!)} → ${CurrencyFormatter.format(log.amount!)}';
-        } else {
-          descriptionText = '${log.actorName} edited ${log.expenseDescription ?? 'Expense'}';
+        actionTitle = '${log.actorName} updated "${log.expenseDescription ?? 'Expense'}"';
+        final details = <String>[];
+        if (prevAmountStr != null && amountStr != null && prevAmountStr != amountStr) {
+          details.add('$prevAmountStr → $amountStr');
+        } else if (amountStr != null) {
+          details.add(amountStr);
         }
+        if (paidByStr != null) details.add(paidByStr);
+        subDetails = details.isNotEmpty ? details.join(' • ') : null;
         break;
+
       case AppConstants.actionProposedEdit:
         icon = Icons.rule_folder_outlined;
         iconColor = AppColors.warning;
         iconBg = AppColors.badgeAmberBg;
-        descriptionText = '${log.actorName} requested an edit on ${log.expenseDescription ?? 'Expense'}';
+        actionTitle = '${log.actorName} requested edit on "${log.expenseDescription ?? 'Expense'}"';
+        final details = <String>[];
+        if (prevAmountStr != null && amountStr != null && prevAmountStr != amountStr) {
+          details.add('Proposed: $prevAmountStr → $amountStr');
+        } else if (amountStr != null) {
+          details.add('Proposed: $amountStr');
+        }
+        if (paidByStr != null) details.add(paidByStr);
+        subDetails = details.isNotEmpty ? details.join(' • ') : null;
         break;
+
       case AppConstants.actionApprovedEdit:
         icon = Icons.check_circle_outline_rounded;
         iconColor = AppColors.success;
         iconBg = AppColors.badgeGreenBg;
-        descriptionText = '${log.actorName} approved edit on ${log.expenseDescription ?? 'Expense'}';
+        actionTitle = '${log.actorName} approved edit on "${log.expenseDescription ?? 'Expense'}"';
+        final details = <String>[];
+        if (amountStr != null) details.add(amountStr);
+        if (paidByStr != null) details.add(paidByStr);
+        subDetails = details.isNotEmpty ? details.join(' • ') : null;
         break;
+
       case AppConstants.actionRejectedEdit:
         icon = Icons.cancel_outlined;
         iconColor = AppColors.error;
         iconBg = AppColors.badgeRedBg;
-        descriptionText = '${log.actorName} declined proposed edit on ${log.expenseDescription ?? 'Expense'}';
+        actionTitle = '${log.actorName} declined proposed edit on "${log.expenseDescription ?? 'Expense'}"';
+        if (amountStr != null) subDetails = amountStr;
         break;
+
       case AppConstants.actionDeleted:
         icon = Icons.delete_outline_rounded;
         iconColor = AppColors.error;
         iconBg = AppColors.badgeRedBg;
-        descriptionText = '${log.actorName} deleted ${log.expenseDescription ?? 'Expense'}';
+        actionTitle = '${log.actorName} deleted "${log.expenseDescription ?? 'Expense'}"';
+        if (amountStr != null) subDetails = amountStr;
         break;
+
       case AppConstants.actionSettled:
         icon = Icons.handshake_rounded;
         iconColor = AppColors.primaryLight;
         iconBg = AppColors.badgeGreenBg;
-        descriptionText = '${log.actorName} settled the balance'
-            '${log.amount != null ? ' of ${CurrencyFormatter.format(log.amount!)}' : ''}';
+        actionTitle = '${log.actorName} settled the balance';
+        if (amountStr != null) subDetails = 'Settled amount: $amountStr';
         break;
+
       default:
         icon = Icons.info_outline_rounded;
         iconColor = AppColors.textSecondary;
         iconBg = AppColors.surfaceElevated;
-        descriptionText = '${log.actorName} updated ${log.expenseDescription ?? 'workspace'}';
+        actionTitle = '${log.actorName} updated "${log.expenseDescription ?? 'workspace'}"';
         break;
     }
 
@@ -122,7 +156,7 @@ class HistoryScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    descriptionText,
+                    actionTitle,
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -130,6 +164,17 @@ class HistoryScreen extends StatelessWidget {
                       height: 1.3,
                     ),
                   ),
+                  if (subDetails != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subDetails,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.primaryLight,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   Text(
                     DateFormatter.formatRelative(log.timestamp),

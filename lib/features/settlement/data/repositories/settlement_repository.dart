@@ -124,6 +124,8 @@ class SettlementRepository {
         actorName: initiatedByName,
         action: AppConstants.actionSettled,
         amount: roundedAmount,
+        paidBy: payerId,
+        paidByName: initiatedBy == payerId ? initiatedByName : 'Partner',
         timestamp: now,
       );
       batch.set(actDocRef, activityLog.toMap());

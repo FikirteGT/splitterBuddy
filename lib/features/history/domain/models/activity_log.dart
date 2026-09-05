@@ -11,6 +11,8 @@ class ActivityLog {
   final String? expenseDescription;
   final double? amount;
   final double? previousAmount;
+  final String? paidBy;
+  final String? paidByName;
   final DateTime timestamp;
 
   const ActivityLog({
@@ -23,6 +25,8 @@ class ActivityLog {
     this.expenseDescription,
     this.amount,
     this.previousAmount,
+    this.paidBy,
+    this.paidByName,
     required this.timestamp,
   });
 
@@ -37,6 +41,8 @@ class ActivityLog {
       if (expenseDescription != null) 'expenseDescription': expenseDescription,
       if (amount != null) 'amount': amount,
       if (previousAmount != null) 'previousAmount': previousAmount,
+      if (paidBy != null) 'paidBy': paidBy,
+      if (paidByName != null) 'paidByName': paidByName,
       'timestamp': Timestamp.fromDate(timestamp),
     };
   }
@@ -58,6 +64,8 @@ class ActivityLog {
       expenseDescription: map['expenseDescription'],
       amount: (map['amount'] is num) ? (map['amount'] as num).toDouble() : null,
       previousAmount: (map['previousAmount'] is num) ? (map['previousAmount'] as num).toDouble() : null,
+      paidBy: map['paidBy'],
+      paidByName: map['paidByName'],
       timestamp: parseDate(map['timestamp']),
     );
   }

@@ -118,6 +118,7 @@ class ExpenseController extends ChangeNotifier {
     required String description,
     required double amount,
     required String paidBy,
+    String? paidByName,
     required String currentUserId,
     required String currentUserName,
     String? partnerId,
@@ -133,12 +134,14 @@ class ExpenseController extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final resolvedPaidByName = paidByName ?? (paidBy == currentUserId ? currentUserName : _partnerName);
       await _expenseRepository.addExpense(
         workspaceId: _currentWorkspaceId!,
         periodId: _currentPeriodId!,
         description: description,
         amount: amount,
         paidBy: paidBy,
+        paidByName: resolvedPaidByName,
         createdBy: currentUserId,
         actorName: currentUserName,
         partnerId: partnerId,
@@ -164,6 +167,7 @@ class ExpenseController extends ChangeNotifier {
     required String newDescription,
     required double newAmount,
     required String newPaidBy,
+    String? newPaidByName,
     required String currentUserId,
     required String currentUserName,
     String? partnerId,
@@ -175,12 +179,14 @@ class ExpenseController extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final resolvedPaidByName = newPaidByName ?? (newPaidBy == currentUserId ? currentUserName : _partnerName);
       await _expenseRepository.editExpense(
         workspaceId: _currentWorkspaceId!,
         expense: expense,
         newDescription: newDescription,
         newAmount: newAmount,
         newPaidBy: newPaidBy,
+        newPaidByName: resolvedPaidByName,
         currentUserId: currentUserId,
         currentUserName: currentUserName,
         partnerId: partnerId,
