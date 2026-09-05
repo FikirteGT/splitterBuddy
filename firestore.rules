@@ -11,12 +11,10 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function getWorkspace(workspaceId) {
-      return get(/databases/$(database)/documents/workspaces/$(workspaceId));
-    }
-
     function isWorkspaceMember(workspaceId) {
-      return isAuthenticated() && (request.auth.uid in getWorkspace(workspaceId).data.memberIds);
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
+        (request.auth.uid in get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.memberIds);
     }
 
     // Users collection
@@ -63,8 +61,7 @@ service cloud.firestore {
         allow create: if isWorkspaceMember(workspaceId) &&
                       request.resource.data.amount > 0 &&
                       request.resource.data.description.size() > 0;
-        allow update: if isWorkspaceMember(workspaceId);
-        allow delete: if isWorkspaceMember(workspaceId);
+        allow update, delete: if isWorkspaceMember(workspaceId);
       }
 
       // Pending Changes Subcollection (Partner Edit Approvals)
@@ -74,7 +71,8 @@ service cloud.firestore {
 
       // Activity Logs Subcollection
       match /activityLogs/{logId} {
-        allow read, create: if isWorkspaceMember(workspaceId);
+        allow read: if isWorkspaceMember(workspaceId);
+        allow create: if isAuthenticated();
         allow update, delete: if false; // Immutable audit log
       }
 
@@ -87,7 +85,8 @@ service cloud.firestore {
 
       // Expense Periods Subcollection
       match /periods/{periodId} {
-        allow read, create, update: if isWorkspaceMember(workspaceId);
+        allow read, update: if isWorkspaceMember(workspaceId);
+        allow create: if isAuthenticated();
         allow delete: if false;
       }
     }
