@@ -19,6 +19,7 @@ import 'package:splitterbuddy/features/workspace/presentation/screens/create_wor
 import 'package:splitterbuddy/features/workspace/presentation/screens/invite_partner_screen.dart';
 import 'package:splitterbuddy/features/workspace/presentation/screens/join_workspace_screen.dart';
 import 'package:splitterbuddy/features/workspace/presentation/screens/workspace_list_screen.dart';
+import 'package:splitterbuddy/features/workspace/presentation/screens/workspace_members_screen.dart';
 import 'package:splitterbuddy/shared/widgets/empty_state_view.dart';
 
 class DashboardScreen extends StatelessWidget {
@@ -128,6 +129,15 @@ class DashboardScreen extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const RecurringExpensesScreen()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.people_alt_outlined),
+            tooltip: 'Workspace Members & Roles',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const WorkspaceMembersScreen()),
               );
             },
           ),

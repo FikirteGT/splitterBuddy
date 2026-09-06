@@ -7,6 +7,7 @@ import 'package:splitterbuddy/features/workspace/domain/models/workspace.dart';
 import 'package:splitterbuddy/features/workspace/presentation/screens/create_workspace_screen.dart';
 import 'package:splitterbuddy/features/workspace/presentation/screens/invite_partner_screen.dart';
 import 'package:splitterbuddy/features/workspace/presentation/screens/join_workspace_screen.dart';
+import 'package:splitterbuddy/features/workspace/presentation/screens/workspace_members_screen.dart';
 import 'package:splitterbuddy/shared/widgets/confirm_dialog.dart';
 import 'package:splitterbuddy/shared/widgets/custom_button.dart';
 import 'package:splitterbuddy/shared/widgets/empty_state_view.dart';
@@ -150,42 +151,59 @@ class WorkspaceListScreen extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        hasPartner
-                                            ? 'Members: ${ws.memberNames.values.join(', ')}'
-                                            : 'Waiting for partner (1/2 members)',
+                                        memberCount > 1
+                                            ? '$memberCount members: ${ws.memberNames.values.join(', ')}'
+                                            : 'Waiting for members (1/${ws.maxMembers})',
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: hasPartner ? AppColors.textSecondary : AppColors.warning,
+                                          color: memberCount > 1 ? AppColors.textSecondary : AppColors.warning,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                if (isOwner)
-                                  PopupMenuButton<String>(
-                                    icon: const Icon(Icons.more_vert_rounded, color: AppColors.textMuted),
-                                    onSelected: (val) {
-                                      if (val == 'invite') {
-                                        Navigator.of(context).push(
-                                          MaterialPageRoute(
-                                            builder: (_) => InvitePartnerScreen(workspace: ws),
-                                          ),
-                                        );
-                                      } else if (val == 'delete') {
-                                        _handleDelete(context, ws, auth.uid);
-                                      }
-                                    },
-                                    itemBuilder: (ctx) => [
-                                      const PopupMenuItem(
-                                        value: 'invite',
-                                        child: Row(
-                                          children: [
-                                            Icon(Icons.share_rounded, size: 18, color: AppColors.primaryLight),
-                                            SizedBox(width: 8),
-                                            Text('Invite Partner'),
-                                          ],
+                                PopupMenuButton<String>(
+                                  icon: const Icon(Icons.more_vert_rounded, color: AppColors.textMuted),
+                                  onSelected: (val) {
+                                    if (val == 'members') {
+                                      wsController.selectWorkspace(ws);
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => const WorkspaceMembersScreen(),
                                         ),
+                                      );
+                                    } else if (val == 'invite') {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => InvitePartnerScreen(workspace: ws),
+                                        ),
+                                      );
+                                    } else if (val == 'delete') {
+                                      _handleDelete(context, ws, auth.uid);
+                                    }
+                                  },
+                                  itemBuilder: (ctx) => [
+                                    const PopupMenuItem(
+                                      value: 'members',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.groups_rounded, size: 18, color: AppColors.primaryLight),
+                                          SizedBox(width: 8),
+                                          Text('Members & Roles'),
+                                        ],
                                       ),
+                                    ),
+                                    const PopupMenuItem(
+                                      value: 'invite',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.share_rounded, size: 18, color: AppColors.primaryLight),
+                                          SizedBox(width: 8),
+                                          Text('Invite Code'),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isOwner)
                                       const PopupMenuItem(
                                         value: 'delete',
                                         child: Row(
@@ -196,8 +214,8 @@ class WorkspaceListScreen extends StatelessWidget {
                                           ],
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                  ],
+                                ),
                               ],
                             ),
                             if (!hasPartner) ...[

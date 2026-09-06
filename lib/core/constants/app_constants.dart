@@ -9,6 +9,7 @@ class AppConstants {
 
   // Constraints
   static const int maxWorkspaceMembers = 2;
+  static const int maxWorkspaceMembersV2 = 10;
   static const int inviteCodeLength = 6;
 
   // Collection Names
@@ -20,6 +21,7 @@ class AppConstants {
   static const String notificationsCollection = 'notifications';
   static const String activityLogsCollection = 'activityLogs';
   static const String settlementsCollection = 'settlements';
+  static const String obligationsCollection = 'obligations';
   static const String recurringExpensesCollection = 'recurringExpenses';
   static const String budgetsCollection = 'budgets';
 
@@ -28,6 +30,11 @@ class AppConstants {
   static const String splitCustom = 'CUSTOM';
   static const String splitPercentage = 'PERCENTAGE';
   static const String splitSingle = 'SINGLE';
+
+  // Settlement Obligation Statuses
+  static const String obligationOpen = 'OPEN';
+  static const String obligationPartiallySettled = 'PARTIALLY_SETTLED';
+  static const String obligationSettled = 'SETTLED';
 
   // Categories
   static const String categoryFood = 'Food';
@@ -65,8 +72,12 @@ class AppConstants {
   static const String notifEditApproved = 'EDIT_APPROVED';
   static const String notifEditRejected = 'EDIT_REJECTED';
   static const String notifSettlement = 'SETTLEMENT';
+  static const String notifPartialSettlement = 'PARTIAL_SETTLEMENT';
   static const String notifBudgetAlert = 'BUDGET_ALERT';
   static const String notifRecurringGenerated = 'RECURRING_GENERATED';
+  static const String notifMemberJoined = 'MEMBER_JOINED';
+  static const String notifMemberRemoved = 'MEMBER_REMOVED';
+  static const String notifRoleChanged = 'ROLE_CHANGED';
 
   // Activity Actions
   static const String actionAdded = 'ADDED';
@@ -76,6 +87,11 @@ class AppConstants {
   static const String actionRejectedEdit = 'REJECTED_EDIT';
   static const String actionDeleted = 'DELETED';
   static const String actionSettled = 'SETTLED';
+  static const String actionPartialSettled = 'PARTIAL_SETTLED';
   static const String actionRecurringCreated = 'RECURRING_CREATED';
   static const String actionRecurringToggled = 'RECURRING_TOGGLED';
+  static const String actionMemberJoined = 'MEMBER_JOINED';
+  static const String actionMemberLeft = 'MEMBER_LEFT';
+  static const String actionMemberRemoved = 'MEMBER_REMOVED';
+  static const String actionRoleChanged = 'ROLE_CHANGED';
 }

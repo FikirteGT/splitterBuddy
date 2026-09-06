@@ -309,7 +309,7 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
                     final amount = CurrencyFormatter.parseAmount(_amountController.text) ?? 0.0;
                     final memberIds = [
                       auth.uid,
-                      if (partnerId != null) partnerId,
+                      ?partnerId,
                     ];
                     final memberNames = {
                       auth.uid: 'You (${auth.displayName})',

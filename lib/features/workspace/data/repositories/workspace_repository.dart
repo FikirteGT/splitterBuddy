@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:splitterbuddy/core/constants/app_constants.dart';
 import 'package:splitterbuddy/core/errors/app_exceptions.dart';
 import 'package:splitterbuddy/core/utils/invite_code_generator.dart';
+import 'package:splitterbuddy/features/history/domain/models/activity_log.dart';
+import 'package:splitterbuddy/features/notifications/domain/models/app_notification.dart';
 import 'package:splitterbuddy/features/workspace/domain/models/expense_period.dart';
 import 'package:splitterbuddy/features/workspace/domain/models/workspace.dart';
 
@@ -16,6 +18,12 @@ class WorkspaceRepository {
 
   CollectionReference get _usersRef =>
       _firestore.collection(AppConstants.usersCollection);
+
+  CollectionReference _activityLogsRef(String workspaceId) =>
+      _workspacesRef.doc(workspaceId).collection(AppConstants.activityLogsCollection);
+
+  CollectionReference _userNotificationsRef(String userId) =>
+      _usersRef.doc(userId).collection(AppConstants.notificationsCollection);
 
   Stream<List<Workspace>> streamUserWorkspaces(String userId) {
     return _workspacesRef
@@ -90,6 +98,8 @@ class WorkspaceRepository {
         ownerId: ownerId,
         memberIds: [ownerId],
         memberNames: {ownerId: ownerName.trim().isEmpty ? 'Owner' : ownerName.trim()},
+        memberRoles: {ownerId: WorkspaceRole.owner},
+        maxMembers: AppConstants.maxWorkspaceMembersV2,
         activePeriodId: periodDocRef.id,
         createdAt: now,
         updatedAt: now,
@@ -187,24 +197,32 @@ class WorkspaceRepository {
         final currentData = freshSnapshot.data() as Map<String, dynamic>;
         final currentMembers = List<String>.from(currentData['memberIds'] ?? []);
         final currentNames = Map<String, dynamic>.from(currentData['memberNames'] ?? {});
+        final rawRoles = Map<String, dynamic>.from(currentData['memberRoles'] ?? {});
+        final maxCount = (currentData['maxMembers'] as num?)?.toInt() ?? AppConstants.maxWorkspaceMembersV2;
 
         if (currentMembers.contains(userId)) {
           throw const WorkspaceException('You are already a member of this workspace.');
         }
 
-        if (currentMembers.length >= AppConstants.maxWorkspaceMembers) {
-          throw const WorkspaceException('This workspace is already full (maximum 2 members).');
+        if (currentMembers.length >= maxCount) {
+          throw WorkspaceException('This workspace is already full (maximum $maxCount members).');
         }
 
+        final effectiveName = userName.trim().isEmpty ? 'Member' : userName.trim();
         final updatedMembers = [...currentMembers, userId];
         final updatedNames = {
           ...currentNames,
-          userId: userName.trim().isEmpty ? 'Partner' : userName.trim(),
+          userId: effectiveName,
+        };
+        final updatedRoles = {
+          ...rawRoles,
+          userId: WorkspaceRole.member,
         };
 
         transaction.update(_workspacesRef.doc(wsId), {
           'memberIds': updatedMembers,
           'memberNames': updatedNames,
+          'memberRoles': updatedRoles,
           'updatedAt': FieldValue.serverTimestamp(),
         });
 
@@ -212,10 +230,25 @@ class WorkspaceRepository {
           'workspaceIds': FieldValue.arrayUnion([wsId]),
         }, SetOptions(merge: true));
 
+        // Add activity log for join
+        final actDocRef = _activityLogsRef(wsId).doc();
+        transaction.set(actDocRef, {
+          'id': actDocRef.id,
+          'workspaceId': wsId,
+          'actorId': userId,
+          'actorName': effectiveName,
+          'action': AppConstants.actionMemberJoined,
+          'amount': 0.0,
+          'paidBy': '',
+          'paidByName': '',
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+
         return Workspace.fromMap({
           ...currentData,
           'memberIds': updatedMembers,
           'memberNames': updatedNames,
+          'memberRoles': updatedRoles,
         }, wsId);
       });
 
@@ -229,6 +262,223 @@ class WorkspaceRepository {
       throw WorkspaceException('Failed to join workspace: ${e.message ?? e.code}');
     } catch (e) {
       throw WorkspaceException('Failed to join workspace: ${e.toString()}');
+    }
+  }
+
+  Future<void> updateMemberRole({
+    required String workspaceId,
+    required String targetUserId,
+    required String newRole,
+    required String callerUserId,
+    required String callerName,
+  }) async {
+    try {
+      final wsDoc = await _workspacesRef.doc(workspaceId).get();
+      if (!wsDoc.exists || wsDoc.data() == null) {
+        throw const WorkspaceException('Workspace not found.');
+      }
+
+      final ws = Workspace.fromMap(wsDoc.data() as Map<String, dynamic>, wsDoc.id);
+      if (!ws.canManageMembers(callerUserId)) {
+        throw const PermissionException('Only workspace owners and admins can update member roles.');
+      }
+
+      // Owner demotion protection
+      if (ws.isOwner(targetUserId) && newRole != WorkspaceRole.owner) {
+        final ownerCount = ws.memberIds.where((id) => ws.isOwner(id)).length;
+        if (ownerCount <= 1) {
+          throw const WorkspaceException('Cannot demote the only owner of the workspace. Promote another member to Owner first.');
+        }
+      }
+
+      final updatedRoles = Map<String, String>.from(ws.memberRoles);
+      updatedRoles[targetUserId] = newRole;
+
+      String newOwnerId = ws.ownerId;
+      if (newRole == WorkspaceRole.owner && ws.ownerId != targetUserId) {
+        newOwnerId = targetUserId;
+      }
+
+      final batch = _firestore.batch();
+      batch.update(_workspacesRef.doc(workspaceId), {
+        'memberRoles': updatedRoles,
+        'ownerId': newOwnerId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      final actRef = _activityLogsRef(workspaceId).doc();
+      final act = ActivityLog(
+        id: actRef.id,
+        workspaceId: workspaceId,
+        actorId: callerUserId,
+        actorName: callerName,
+        action: AppConstants.actionRoleChanged,
+        details: 'Updated role of ${ws.getMemberName(targetUserId)} to $newRole',
+        timestamp: DateTime.now(),
+      );
+      batch.set(actRef, act.toMap());
+
+      // Send notification to target user
+      final notifRef = _userNotificationsRef(targetUserId).doc();
+      final notif = AppNotification(
+        id: notifRef.id,
+        userId: targetUserId,
+        workspaceId: workspaceId,
+        type: AppConstants.notifRoleChanged,
+        title: 'Role Updated',
+        message: 'Your role in "${ws.name}" was changed to $newRole by $callerName.',
+        createdAt: DateTime.now(),
+      );
+      batch.set(notifRef, notif.toMap());
+
+      await batch.commit();
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw WorkspaceException('Failed to update member role: ${e.toString()}');
+    }
+  }
+
+  Future<void> removeMember({
+    required String workspaceId,
+    required String targetUserId,
+    required String callerUserId,
+    required String callerName,
+  }) async {
+    try {
+      final wsDoc = await _workspacesRef.doc(workspaceId).get();
+      if (!wsDoc.exists || wsDoc.data() == null) {
+        throw const WorkspaceException('Workspace not found.');
+      }
+
+      final ws = Workspace.fromMap(wsDoc.data() as Map<String, dynamic>, wsDoc.id);
+      if (!ws.canManageMembers(callerUserId)) {
+        throw const PermissionException('Only workspace owners and admins can remove members.');
+      }
+
+      if (ws.isOwner(targetUserId)) {
+        throw const WorkspaceException('Cannot remove the workspace owner. Transfer ownership first.');
+      }
+
+      final updatedMemberIds = ws.memberIds.where((id) => id != targetUserId).toList();
+      final updatedNames = Map<String, String>.from(ws.memberNames)..remove(targetUserId);
+      final updatedRoles = Map<String, String>.from(ws.memberRoles)..remove(targetUserId);
+
+      final batch = _firestore.batch();
+      batch.update(_workspacesRef.doc(workspaceId), {
+        'memberIds': updatedMemberIds,
+        'memberNames': updatedNames,
+        'memberRoles': updatedRoles,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      batch.update(_usersRef.doc(targetUserId), {
+        'workspaceIds': FieldValue.arrayRemove([workspaceId]),
+      });
+
+      final actRef = _activityLogsRef(workspaceId).doc();
+      final act = ActivityLog(
+        id: actRef.id,
+        workspaceId: workspaceId,
+        actorId: callerUserId,
+        actorName: callerName,
+        action: AppConstants.actionMemberRemoved,
+        details: 'Removed ${ws.getMemberName(targetUserId)} from workspace',
+        timestamp: DateTime.now(),
+      );
+      batch.set(actRef, act.toMap());
+
+      final notifRef = _userNotificationsRef(targetUserId).doc();
+      final notif = AppNotification(
+        id: notifRef.id,
+        userId: targetUserId,
+        workspaceId: workspaceId,
+        type: AppConstants.notifMemberRemoved,
+        title: 'Removed from Workspace',
+        message: 'You have been removed from "${ws.name}" by $callerName.',
+        createdAt: DateTime.now(),
+      );
+      batch.set(notifRef, notif.toMap());
+
+      await batch.commit();
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw WorkspaceException('Failed to remove member: ${e.toString()}');
+    }
+  }
+
+  Future<void> leaveWorkspace({
+    required String workspaceId,
+    required String userId,
+    required String userName,
+    String? transferOwnerId,
+  }) async {
+    try {
+      final wsDoc = await _workspacesRef.doc(workspaceId).get();
+      if (!wsDoc.exists || wsDoc.data() == null) {
+        throw const WorkspaceException('Workspace not found.');
+      }
+
+      final ws = Workspace.fromMap(wsDoc.data() as Map<String, dynamic>, wsDoc.id);
+      if (!ws.memberIds.contains(userId)) {
+        throw const WorkspaceException('You are not a member of this workspace.');
+      }
+
+      final remainingMembers = ws.memberIds.where((id) => id != userId).toList();
+
+      if (remainingMembers.isEmpty) {
+        // Last member leaving: delete the workspace
+        await deleteWorkspace(workspaceId, userId);
+        return;
+      }
+
+      String newOwnerId = ws.ownerId;
+      final updatedRoles = Map<String, String>.from(ws.memberRoles)..remove(userId);
+
+      if (ws.isOwner(userId)) {
+        if (transferOwnerId != null && remainingMembers.contains(transferOwnerId)) {
+          newOwnerId = transferOwnerId;
+          updatedRoles[transferOwnerId] = WorkspaceRole.owner;
+        } else {
+          // Promote next remaining member to owner
+          newOwnerId = remainingMembers.first;
+          updatedRoles[newOwnerId] = WorkspaceRole.owner;
+        }
+      }
+
+      final updatedNames = Map<String, String>.from(ws.memberNames)..remove(userId);
+
+      final batch = _firestore.batch();
+      batch.update(_workspacesRef.doc(workspaceId), {
+        'memberIds': remainingMembers,
+        'memberNames': updatedNames,
+        'memberRoles': updatedRoles,
+        'ownerId': newOwnerId,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      batch.update(_usersRef.doc(userId), {
+        'workspaceIds': FieldValue.arrayRemove([workspaceId]),
+      });
+
+      final actRef = _activityLogsRef(workspaceId).doc();
+      final act = ActivityLog(
+        id: actRef.id,
+        workspaceId: workspaceId,
+        actorId: userId,
+        actorName: userName,
+        action: AppConstants.actionMemberLeft,
+        details: '$userName left the workspace',
+        timestamp: DateTime.now(),
+      );
+      batch.set(actRef, act.toMap());
+
+      await batch.commit();
+    } on AppException {
+      rethrow;
+    } catch (e) {
+      throw WorkspaceException('Failed to leave workspace: ${e.toString()}');
     }
   }
 
@@ -261,3 +511,4 @@ class WorkspaceRepository {
     }
   }
 }
+

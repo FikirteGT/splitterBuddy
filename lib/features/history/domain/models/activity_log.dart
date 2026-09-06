@@ -6,13 +6,14 @@ class ActivityLog {
   final String workspaceId;
   final String actorId;
   final String actorName;
-  final String action; // ADDED, EDITED, PROPOSED_EDIT, APPROVED_EDIT, REJECTED_EDIT, DELETED, SETTLED
+  final String action; // ADDED, EDITED, PROPOSED_EDIT, APPROVED_EDIT, REJECTED_EDIT, DELETED, SETTLED, etc.
   final String? expenseId;
   final String? expenseDescription;
   final double? amount;
   final double? previousAmount;
   final String? paidBy;
   final String? paidByName;
+  final String? details;
   final DateTime timestamp;
 
   const ActivityLog({
@@ -27,6 +28,7 @@ class ActivityLog {
     this.previousAmount,
     this.paidBy,
     this.paidByName,
+    this.details,
     required this.timestamp,
   });
 
@@ -43,6 +45,7 @@ class ActivityLog {
       if (previousAmount != null) 'previousAmount': previousAmount,
       if (paidBy != null) 'paidBy': paidBy,
       if (paidByName != null) 'paidByName': paidByName,
+      if (details != null) 'details': details,
       'timestamp': Timestamp.fromDate(timestamp),
     };
   }
@@ -66,6 +69,7 @@ class ActivityLog {
       previousAmount: (map['previousAmount'] is num) ? (map['previousAmount'] as num).toDouble() : null,
       paidBy: map['paidBy'],
       paidByName: map['paidByName'],
+      details: map['details'],
       timestamp: parseDate(map['timestamp']),
     );
   }

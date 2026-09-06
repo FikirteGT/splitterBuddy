@@ -17,6 +17,18 @@ service cloud.firestore {
         (request.auth.uid in get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.memberIds);
     }
 
+    function isWorkspaceAdminOrOwner(workspaceId) {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/workspaces/$(workspaceId)) &&
+        (
+          get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.ownerId == request.auth.uid ||
+          (
+            get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.memberRoles[request.auth.uid] == 'ADMIN' ||
+            get(/databases/$(database)/documents/workspaces/$(workspaceId)).data.memberRoles[request.auth.uid] == 'OWNER'
+          )
+        );
+    }
+
     // Users collection
     match /users/{userId} {
       allow read: if isAuthenticated();
@@ -42,13 +54,13 @@ service cloud.firestore {
                     request.resource.data.memberIds.size() == 1 &&
                     request.resource.data.memberIds[0] == request.auth.uid;
 
-      // Update workspace (Joining with max 2 members limit or member state updates)
+      // Update workspace (Joining with max 10 members limit or member state updates)
       allow update: if isAuthenticated() && (
-        // Joining: workspace must have < 2 members, and adding self
-        (resource.data.memberIds.size() < 2 &&
-         request.resource.data.memberIds.size() <= 2 &&
+        // Joining: workspace must have < 10 members, and adding self
+        (resource.data.memberIds.size() < 10 &&
+         request.resource.data.memberIds.size() <= 10 &&
          request.auth.uid in request.resource.data.memberIds) ||
-        // Existing member updating active period or workspace details
+        // Existing member updating active period, roles, or workspace details
         (request.auth.uid in resource.data.memberIds)
       );
 
@@ -62,6 +74,21 @@ service cloud.firestore {
                       request.resource.data.amount > 0 &&
                       request.resource.data.description.size() > 0;
         allow update, delete: if isWorkspaceMember(workspaceId);
+      }
+
+      // Recurring Expenses Subcollection
+      match /recurringExpenses/{recurringId} {
+        allow read, write: if isWorkspaceMember(workspaceId);
+      }
+
+      // Budgets Subcollection
+      match /budgets/{budgetId} {
+        allow read, write: if isWorkspaceMember(workspaceId);
+      }
+
+      // Settlement Obligations Subcollection
+      match /obligations/{obligationId} {
+        allow read, write: if isWorkspaceMember(workspaceId);
       }
 
       // Pending Changes Subcollection (Partner Edit Approvals)

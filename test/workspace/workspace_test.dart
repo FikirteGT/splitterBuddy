@@ -50,6 +50,7 @@ void main() {
         ownerId: 'user_1',
         memberIds: ['user_1', 'user_2'],
         memberNames: {'user_1': 'Fikrte', 'user_2': 'Yeabsira'},
+        maxMembers: 2,
         activePeriodId: 'period_1',
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

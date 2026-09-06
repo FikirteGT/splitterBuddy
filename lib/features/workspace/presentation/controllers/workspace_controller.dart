@@ -186,6 +186,110 @@ class WorkspaceController extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateMemberRole({
+    required String targetUserId,
+    required String newRole,
+    required String callerUserId,
+    required String callerName,
+  }) async {
+    if (_currentWorkspace == null) return false;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _workspaceRepository.updateMemberRole(
+        workspaceId: _currentWorkspace!.id,
+        targetUserId: targetUserId,
+        newRole: newRole,
+        callerUserId: callerUserId,
+        callerName: callerName,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AppException catch (e) {
+      _errorMessage = e.message;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'Failed to update member role: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> removeMember({
+    required String targetUserId,
+    required String callerUserId,
+    required String callerName,
+  }) async {
+    if (_currentWorkspace == null) return false;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _workspaceRepository.removeMember(
+        workspaceId: _currentWorkspace!.id,
+        targetUserId: targetUserId,
+        callerUserId: callerUserId,
+        callerName: callerName,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AppException catch (e) {
+      _errorMessage = e.message;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'Failed to remove member: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> leaveWorkspace({
+    required String userId,
+    required String userName,
+    String? transferOwnerId,
+  }) async {
+    if (_currentWorkspace == null) return false;
+    final wsId = _currentWorkspace!.id;
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _workspaceRepository.leaveWorkspace(
+        workspaceId: wsId,
+        userId: userId,
+        userName: userName,
+        transferOwnerId: transferOwnerId,
+      );
+      _currentWorkspace = null;
+      _currentPeriod = null;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on AppException catch (e) {
+      _errorMessage = e.message;
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _errorMessage = 'Failed to leave workspace: $e';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<bool> deleteWorkspace(String workspaceId, String userId) async {
     _isLoading = true;
     _errorMessage = null;
