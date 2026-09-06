@@ -28,3 +28,7 @@ class PermissionException extends AppException {
   const PermissionException([String message = 'You do not have permission to perform this action.'])
       : super(message, 'permission-denied');
 }
+
+class DatabaseException extends AppException {
+  const DatabaseException(super.message, [super.code]);
+}

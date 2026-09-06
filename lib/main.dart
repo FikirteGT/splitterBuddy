@@ -8,6 +8,9 @@ import 'core/theme/app_theme.dart';
 import 'features/authentication/data/repositories/auth_repository.dart';
 import 'features/authentication/presentation/controllers/auth_controller.dart';
 import 'features/authentication/presentation/screens/auth_wrapper.dart';
+import 'features/analytics/presentation/controllers/analytics_controller.dart';
+import 'features/budgets/data/repositories/budget_repository.dart';
+import 'features/budgets/presentation/controllers/budget_controller.dart';
 import 'features/expenses/data/repositories/expense_repository.dart';
 import 'features/expenses/presentation/controllers/expense_controller.dart';
 import 'features/history/data/repositories/activity_repository.dart';
@@ -58,9 +61,18 @@ class SplitterBudApp extends StatelessWidget {
         Provider<NotificationRepository>(create: (_) => NotificationRepository()),
         Provider<SettlementRepository>(create: (_) => SettlementRepository()),
         Provider<RecurringExpenseRepository>(create: (_) => RecurringExpenseRepository()),
+        Provider<BudgetRepository>(create: (_) => BudgetRepository()),
         Provider<ReceiptService>(create: (_) => ReceiptService()),
 
         // Controllers
+        ChangeNotifierProvider<AnalyticsController>(
+          create: (_) => AnalyticsController(),
+        ),
+        ChangeNotifierProvider<BudgetController>(
+          create: (ctx) => BudgetController(
+            repository: ctx.read<BudgetRepository>(),
+          ),
+        ),
         ChangeNotifierProvider<AuthController>(
           create: (ctx) => AuthController(
             authRepository: ctx.read<AuthRepository>(),

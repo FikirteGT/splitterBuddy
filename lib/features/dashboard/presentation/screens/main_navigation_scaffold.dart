@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:splitterbuddy/core/constants/app_colors.dart';
+import 'package:splitterbuddy/features/analytics/presentation/screens/analytics_screen.dart';
 import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:splitterbuddy/features/authentication/presentation/screens/profile_screen.dart';
+import 'package:splitterbuddy/features/budgets/presentation/controllers/budget_controller.dart';
 import 'package:splitterbuddy/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:splitterbuddy/features/expenses/presentation/controllers/expense_controller.dart';
 import 'package:splitterbuddy/features/history/presentation/controllers/history_controller.dart';
@@ -25,6 +27,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
 
   final List<Widget> _screens = const [
     DashboardScreen(),
+    AnalyticsScreen(),
     HistoryScreen(),
     NotificationsScreen(),
     ProfileScreen(),
@@ -44,6 +47,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     final notifController = context.read<NotificationController>();
     final settlementController = context.read<SettlementController>();
     final recurringController = context.read<RecurringExpenseController>();
+    final budgetController = context.read<BudgetController>();
 
     final user = auth.currentUser;
     if (user != null) {
@@ -58,6 +62,7 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
       historyController.updateWorkspace(currentWs.id);
       settlementController.updateWorkspace(currentWs.id);
       recurringController.updateWorkspace(currentWs.id);
+      budgetController.updateWorkspace(currentWs.id);
 
       final partnerId = currentWs.getPartnerId(auth.uid);
       final partnerName = currentWs.getPartnerName(auth.uid);
@@ -77,6 +82,15 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
         currentUserName: auth.displayName,
         partnerId: partnerId,
       );
+
+      // Evaluate budget alerts
+      if (expController.activeExpenses.isNotEmpty) {
+        budgetController.evaluateBudgetAlerts(
+          expenses: expController.activeExpenses,
+          currentUserId: auth.uid,
+          memberIds: currentWs.members,
+        );
+      }
     }
   }
 
@@ -100,6 +114,11 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
             icon: Icon(Icons.dashboard_outlined),
             activeIcon: Icon(Icons.dashboard_rounded),
             label: 'Home',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.insights_outlined),
+            activeIcon: Icon(Icons.insights_rounded),
+            label: 'Analytics',
           ),
           const BottomNavigationBarItem(
             icon: Icon(Icons.history_rounded),

@@ -23,6 +23,7 @@ class Workspace {
     required this.updatedAt,
   });
 
+  List<String> get members => memberIds;
   bool get isFull => memberIds.length >= 2;
   bool get hasPartner => memberIds.length == 2;
 
