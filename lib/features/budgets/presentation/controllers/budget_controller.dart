@@ -145,13 +145,23 @@ class BudgetController extends ChangeNotifier {
   }
 
   Future<bool> createBudget({
+    String? workspaceId,
     required String category,
     required double limitAmount,
     String period = 'monthly',
     required String createdBy,
   }) async {
-    if (_currentWorkspaceId == null) return false;
+    final targetWorkspaceId = (workspaceId != null && workspaceId.isNotEmpty)
+        ? workspaceId
+        : _currentWorkspaceId;
 
+    if (targetWorkspaceId == null || targetWorkspaceId.isEmpty) {
+      _errorMessage = 'No active workspace selected.';
+      notifyListeners();
+      return false;
+    }
+
+    _currentWorkspaceId ??= targetWorkspaceId;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -159,7 +169,7 @@ class BudgetController extends ChangeNotifier {
     try {
       final budget = Budget(
         id: '',
-        workspaceId: _currentWorkspaceId!,
+        workspaceId: targetWorkspaceId,
         category: category,
         limitAmount: limitAmount,
         period: period,
@@ -168,7 +178,7 @@ class BudgetController extends ChangeNotifier {
       );
 
       await _repository.createBudget(
-        workspaceId: _currentWorkspaceId!,
+        workspaceId: targetWorkspaceId,
         budget: budget,
       );
 
@@ -188,12 +198,16 @@ class BudgetController extends ChangeNotifier {
     }
   }
 
-  Future<bool> deleteBudget(String budgetId) async {
-    if (_currentWorkspaceId == null) return false;
+  Future<bool> deleteBudget(String budgetId, {String? workspaceId}) async {
+    final targetWorkspaceId = (workspaceId != null && workspaceId.isNotEmpty)
+        ? workspaceId
+        : _currentWorkspaceId;
+
+    if (targetWorkspaceId == null || targetWorkspaceId.isEmpty) return false;
 
     try {
       await _repository.deleteBudget(
-        workspaceId: _currentWorkspaceId!,
+        workspaceId: targetWorkspaceId,
         budgetId: budgetId,
       );
       return true;

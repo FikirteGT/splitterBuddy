@@ -9,6 +9,7 @@ import 'package:splitterbuddy/features/budgets/presentation/controllers/budget_c
 import 'package:splitterbuddy/features/expenses/domain/models/expense_category.dart';
 import 'package:splitterbuddy/features/expenses/presentation/controllers/expense_controller.dart';
 import 'package:splitterbuddy/features/expenses/presentation/widgets/category_picker_sheet.dart';
+import 'package:splitterbuddy/features/workspace/presentation/controllers/workspace_controller.dart';
 import 'package:splitterbuddy/shared/widgets/confirm_dialog.dart';
 import 'package:splitterbuddy/shared/widgets/custom_button.dart';
 import 'package:splitterbuddy/shared/widgets/custom_text_field.dart';
@@ -21,7 +22,9 @@ class BudgetsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final budgetController = context.watch<BudgetController>();
     final expController = context.watch<ExpenseController>();
+    final wsController = context.watch<WorkspaceController>();
     final auth = context.watch<AuthController>();
+    final currentWs = wsController.currentWorkspace;
 
     final calculations = budgetController.getBudgetCalculations(expController.activeExpenses);
 
@@ -30,7 +33,7 @@ class BudgetsScreen extends StatelessWidget {
         title: const Text('Budgets & Limits'),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddBudgetDialog(context, auth.uid),
+        onPressed: () => _showAddBudgetDialog(context, auth.uid, currentWs?.id),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
@@ -43,7 +46,7 @@ class BudgetsScreen extends StatelessWidget {
               subtitle: 'Create monthly spending targets for categories or overall expenses to receive threshold alerts.',
               buttonText: 'Set a Budget',
               buttonIcon: Icons.add_rounded,
-              onButtonPressed: () => _showAddBudgetDialog(context, auth.uid),
+              onButtonPressed: () => _showAddBudgetDialog(context, auth.uid, currentWs?.id),
             )
           : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -127,7 +130,7 @@ class BudgetsScreen extends StatelessWidget {
                                   isDestructive: true,
                                 );
                                 if (confirmed == true) {
-                                  await budgetController.deleteBudget(budget.id);
+                                  await budgetController.deleteBudget(budget.id, workspaceId: currentWs?.id);
                                 }
                               },
                             ),
@@ -177,21 +180,22 @@ class BudgetsScreen extends StatelessWidget {
     );
   }
 
-  void _showAddBudgetDialog(BuildContext context, String currentUserId) {
+  void _showAddBudgetDialog(BuildContext context, String currentUserId, String? workspaceId) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (ctx) => _AddBudgetBottomSheet(currentUserId: currentUserId),
+      builder: (ctx) => _AddBudgetBottomSheet(currentUserId: currentUserId, workspaceId: workspaceId),
     );
   }
 }
 
 class _AddBudgetBottomSheet extends StatefulWidget {
   final String currentUserId;
+  final String? workspaceId;
 
-  const _AddBudgetBottomSheet({required this.currentUserId});
+  const _AddBudgetBottomSheet({required this.currentUserId, this.workspaceId});
 
   @override
   State<_AddBudgetBottomSheet> createState() => _AddBudgetBottomSheetState();
@@ -222,6 +226,7 @@ class _AddBudgetBottomSheetState extends State<_AddBudgetBottomSheet> {
     final categoryToSave = _selectedType == 'overall' ? 'overall' : _selectedCategory;
 
     final success = await budgetController.createBudget(
+      workspaceId: widget.workspaceId,
       category: categoryToSave,
       limitAmount: amount,
       createdBy: widget.currentUserId,
@@ -232,6 +237,13 @@ class _AddBudgetBottomSheetState extends State<_AddBudgetBottomSheet> {
       Navigator.of(context).pop();
       messenger.showSnackBar(
         const SnackBar(content: Text('Budget created successfully!'), backgroundColor: AppColors.success),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(budgetController.errorMessage ?? 'Failed to create budget.'),
+          backgroundColor: AppColors.error,
+        ),
       );
     }
   }
@@ -335,6 +347,7 @@ class _AddBudgetBottomSheetState extends State<_AddBudgetBottomSheet> {
           CustomButton(
             text: 'Save Budget Target',
             icon: Icons.check_rounded,
+            isLoading: context.watch<BudgetController>().isLoading,
             onPressed: _handleSave,
           ),
         ],
