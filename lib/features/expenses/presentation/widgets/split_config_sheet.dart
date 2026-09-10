@@ -278,8 +278,10 @@ class _SplitConfigSheetState extends State<SplitConfigSheet> {
                 final name = widget.memberNames[id] ?? 'Member';
                 return RadioListTile<String>(
                   value: id,
+                  // ignore: deprecated_member_use
                   groupValue: _selectedSingleMemberId,
                   title: Text(name, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary)),
+                  // ignore: deprecated_member_use
                   onChanged: (val) {
                     setState(() => _selectedSingleMemberId = val);
                     _validate();

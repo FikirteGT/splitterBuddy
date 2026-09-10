@@ -47,13 +47,17 @@ class CustomButton extends StatelessWidget {
         children: [
           Icon(icon, size: 20, color: effectiveTextColor),
           const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              color: effectiveTextColor,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.2,
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: effectiveTextColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
             ),
           ),
         ],
@@ -62,6 +66,8 @@ class CustomButton extends StatelessWidget {
       childContent = Text(
         text,
         textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color: effectiveTextColor,
           fontSize: 16,
