@@ -36,10 +36,13 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _syncControllerContexts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncControllerContexts();
+    });
   }
 
   void _syncControllerContexts() {
+    if (!mounted) return;
     final auth = context.read<AuthController>();
     final wsController = context.read<WorkspaceController>();
     final expController = context.read<ExpenseController>();
@@ -96,7 +99,12 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    _syncControllerContexts();
+    context.watch<WorkspaceController>();
+    context.watch<AuthController>();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncControllerContexts();
+    });
 
     final notifController = context.watch<NotificationController>();
     final unreadCount = notifController.unreadCount;
