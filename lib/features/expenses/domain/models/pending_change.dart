@@ -37,10 +37,115 @@ class PendingChange {
   String get originalDescription => originalValues['description']?.toString() ?? '';
   double get originalAmount => (originalValues['amount'] is num) ? (originalValues['amount'] as num).toDouble() : 0.0;
   String get originalPaidBy => originalValues['paidBy']?.toString() ?? '';
+  String? get originalCategory => originalValues['category']?.toString();
+  String? get originalSplitType => originalValues['splitType']?.toString();
+  Map<String, double>? get originalSplitDetails {
+    final raw = originalValues['splitDetails'];
+    if (raw is Map) {
+      return raw.map((k, v) => MapEntry(k.toString(), (v as num).toDouble()));
+    }
+    return null;
+  }
+  String? get originalSplitSingleMemberId => originalValues['splitSingleMemberId']?.toString();
+  String? get originalReceiptUrl => originalValues['receiptUrl']?.toString();
+  String? get originalReceiptPath => originalValues['receiptPath']?.toString();
 
   String get proposedDescription => proposedValues['description']?.toString() ?? '';
   double get proposedAmount => (proposedValues['amount'] is num) ? (proposedValues['amount'] as num).toDouble() : 0.0;
   String get proposedPaidBy => proposedValues['paidBy']?.toString() ?? '';
+  String? get proposedCategory => proposedValues['category']?.toString();
+  String? get proposedSplitType => proposedValues['splitType']?.toString();
+  Map<String, double>? get proposedSplitDetails {
+    final raw = proposedValues['splitDetails'];
+    if (raw is Map) {
+      return raw.map((k, v) => MapEntry(k.toString(), (v as num).toDouble()));
+    }
+    return null;
+  }
+  String? get proposedSplitSingleMemberId => proposedValues['splitSingleMemberId']?.toString();
+  String? get proposedReceiptUrl => proposedValues['receiptUrl']?.toString();
+  String? get proposedReceiptPath => proposedValues['receiptPath']?.toString();
+
+  /// Returns a concise string describing all changes, e.g. "Amount: 500 ETB ➔ 600 ETB, Description: 'Food' ➔ 'Dinner'"
+  String formatDiffSummary({Map<String, String>? memberNames}) {
+    final diffs = <String>[];
+
+    if (originalDescription != proposedDescription && proposedDescription.isNotEmpty) {
+      diffs.add('Description: "$originalDescription" ➔ "$proposedDescription"');
+    }
+
+    if (originalAmount != proposedAmount && proposedAmount > 0) {
+      diffs.add('Amount: ${originalAmount.toStringAsFixed(2)} ETB ➔ ${proposedAmount.toStringAsFixed(2)} ETB');
+    }
+
+    if (originalCategory != null && proposedCategory != null && originalCategory != proposedCategory) {
+      diffs.add('Category: $originalCategory ➔ $proposedCategory');
+    }
+
+    if (originalPaidBy != proposedPaidBy && proposedPaidBy.isNotEmpty) {
+      final oldName = memberNames?[originalPaidBy] ?? originalPaidBy;
+      final newName = memberNames?[proposedPaidBy] ?? proposedPaidBy;
+      diffs.add('Paid By: $oldName ➔ $newName');
+    }
+
+    if (originalSplitType != null && proposedSplitType != null && originalSplitType != proposedSplitType) {
+      diffs.add('Split: $originalSplitType ➔ $proposedSplitType');
+    }
+
+    if (diffs.isEmpty) {
+      return 'Expense details updated';
+    }
+    return diffs.join(', ');
+  }
+
+  /// Returns structured diff items for rendering visual comparisons in UI cards.
+  List<PendingChangeDiffItem> getDetailedDiffs({Map<String, String>? memberNames}) {
+    final items = <PendingChangeDiffItem>[];
+
+    if (originalDescription != proposedDescription && proposedDescription.isNotEmpty) {
+      items.add(PendingChangeDiffItem(
+        label: 'Description',
+        oldValue: originalDescription,
+        newValue: proposedDescription,
+      ));
+    }
+
+    if (originalAmount != proposedAmount && proposedAmount > 0) {
+      items.add(PendingChangeDiffItem(
+        label: 'Amount',
+        oldValue: '${originalAmount.toStringAsFixed(2)} ETB',
+        newValue: '${proposedAmount.toStringAsFixed(2)} ETB',
+      ));
+    }
+
+    if (originalCategory != null && proposedCategory != null && originalCategory != proposedCategory) {
+      items.add(PendingChangeDiffItem(
+        label: 'Category',
+        oldValue: originalCategory!,
+        newValue: proposedCategory!,
+      ));
+    }
+
+    if (originalPaidBy != proposedPaidBy && proposedPaidBy.isNotEmpty) {
+      final oldName = memberNames?[originalPaidBy] ?? originalPaidBy;
+      final newName = memberNames?[proposedPaidBy] ?? proposedPaidBy;
+      items.add(PendingChangeDiffItem(
+        label: 'Paid By',
+        oldValue: oldName,
+        newValue: newName,
+      ));
+    }
+
+    if (originalSplitType != null && proposedSplitType != null && originalSplitType != proposedSplitType) {
+      items.add(PendingChangeDiffItem(
+        label: 'Split Type',
+        oldValue: originalSplitType!,
+        newValue: proposedSplitType!,
+      ));
+    }
+
+    return items;
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -81,4 +186,16 @@ class PendingChange {
       reviewedAt: map['reviewedAt'] != null ? parseDate(map['reviewedAt']) : null,
     );
   }
+}
+
+class PendingChangeDiffItem {
+  final String label;
+  final String oldValue;
+  final String newValue;
+
+  const PendingChangeDiffItem({
+    required this.label,
+    required this.oldValue,
+    required this.newValue,
+  });
 }
