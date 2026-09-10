@@ -98,7 +98,7 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
 
     final partnerId = ws?.getPartnerId(auth.uid);
     final partnerName = ws?.getPartnerName(auth.uid) ?? 'Partner';
-    final isOwnExpense = widget.expense.paidBy == auth.uid || widget.expense.createdBy == auth.uid;
+    final hasPartner = ws != null && ws.memberIds.length > 1;
     final newPaidByName = _selectedPaidBy == auth.uid ? auth.displayName : partnerName;
 
     String? receiptUrl = _existingReceiptUrl;
@@ -135,6 +135,8 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
       currentUserId: auth.uid,
       currentUserName: auth.displayName,
       partnerId: partnerId,
+      allMemberIds: ws?.memberIds,
+      memberNames: ws?.memberNames,
     );
 
     if (!mounted) return;
@@ -145,23 +147,23 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
           content: Row(
             children: [
               Icon(
-                isOwnExpense ? Icons.check_circle_rounded : Icons.pending_actions_rounded,
+                hasPartner ? Icons.pending_actions_rounded : Icons.check_circle_rounded,
                 color: Colors.white,
                 size: 20,
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  isOwnExpense
-                      ? 'Expense updated successfully!'
-                      : 'Edit proposal submitted for partner review!',
+                  hasPartner
+                      ? 'Edit proposal sent! Partner has been notified to review.'
+                      : 'Expense updated successfully!',
                 ),
               ),
             ],
           ),
-          backgroundColor: isOwnExpense ? AppColors.success : AppColors.warning,
+          backgroundColor: hasPartner ? AppColors.primary : AppColors.success,
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 4),
         ),
       );
     } else if (expController.errorMessage != null) {
@@ -184,12 +186,12 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
 
     final partnerId = currentWs?.getPartnerId(auth.uid);
     final partnerName = currentWs?.getPartnerName(auth.uid) ?? 'Partner';
-    final isOwnExpense = widget.expense.paidBy == auth.uid || widget.expense.createdBy == auth.uid;
+    final hasPartner = currentWs != null && currentWs.memberIds.length > 1;
     final category = ExpenseCategory.find(_selectedCategory);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isOwnExpense ? 'Edit Expense' : 'Propose Expense Edit'),
+        title: Text(hasPartner ? 'Request Expense Edit' : 'Edit Expense'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -199,22 +201,22 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (!isOwnExpense) ...[
+                if (hasPartner) ...[
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: AppColors.badgeAmberBg,
+                      color: AppColors.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.warning.withValues(alpha: 0.5)),
+                      border: Border.all(color: AppColors.primaryLight.withValues(alpha: 0.4)),
                     ),
                     child: Row(
                       children: const [
-                        Icon(Icons.info_outline_rounded, color: AppColors.warning, size: 20),
+                        Icon(Icons.info_outline_rounded, color: AppColors.primaryLight, size: 20),
                         SizedBox(width: 10),
                         Expanded(
                           child: Text(
-                            'This expense was paid/created by your partner. Saving changes will send a proposal for their approval.',
-                            style: TextStyle(fontSize: 12, color: AppColors.warning, fontWeight: FontWeight.w500),
+                            'Editing this expense will send an edit proposal to your partner(s) with what changed. The shared balance will update once accepted.',
+                            style: TextStyle(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w500, height: 1.35),
                           ),
                         ),
                       ],
@@ -479,8 +481,8 @@ class _EditExpenseScreenState extends State<EditExpenseScreen> {
 
                 // Submit Button
                 CustomButton(
-                  text: isOwnExpense ? 'Save Changes' : 'Submit Proposal for Approval',
-                  icon: isOwnExpense ? Icons.check_rounded : Icons.send_rounded,
+                  text: hasPartner ? 'Submit Edit for Partner Approval' : 'Save Changes',
+                  icon: hasPartner ? Icons.send_rounded : Icons.check_rounded,
                   isLoading: expController.isLoading || _isUploadingReceipt,
                   onPressed: _handleSubmit,
                 ),

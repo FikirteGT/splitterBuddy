@@ -5,7 +5,7 @@ import 'package:splitterbuddy/core/utils/date_formatter.dart';
 import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:splitterbuddy/features/expenses/presentation/controllers/expense_controller.dart';
 import 'package:splitterbuddy/features/notifications/domain/models/app_notification.dart';
-import 'package:splitterbuddy/features/notifications/presentation/controllers/notification_controller.dart';
+import 'package:splitterbuddy/features/workspace/presentation/controllers/workspace_controller.dart';
 import 'package:splitterbuddy/shared/widgets/custom_button.dart';
 import 'package:splitterbuddy/shared/widgets/empty_state_view.dart';
 
@@ -61,8 +61,10 @@ class _NotificationCardState extends State<_NotificationCard> {
   Future<void> _handleApprove() async {
     final notif = widget.notification;
     final expController = context.read<ExpenseController>();
+    final wsController = context.read<WorkspaceController>();
     final auth = context.read<AuthController>();
     final notifController = context.read<NotificationController>();
+    final currentWs = wsController.currentWorkspace;
 
     final pendingChange = expController.pendingChanges.where((p) => p.id == notif.pendingChangeId).firstOrNull;
     if (pendingChange == null) {
@@ -78,6 +80,8 @@ class _NotificationCardState extends State<_NotificationCard> {
       pendingChange: pendingChange,
       reviewerId: auth.uid,
       reviewerName: auth.displayName,
+      allMemberIds: currentWs?.memberIds,
+      memberNames: currentWs?.memberNames,
     );
     if (!mounted) return;
     setState(() => _isProcessing = false);
@@ -86,7 +90,7 @@ class _NotificationCardState extends State<_NotificationCard> {
       await notifController.markAsRead(notif.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Edit approved! Balance updated.'), backgroundColor: AppColors.success),
+          const SnackBar(content: Text('Edit accepted! Shared balance updated.'), backgroundColor: AppColors.success),
         );
       }
     }
@@ -95,8 +99,10 @@ class _NotificationCardState extends State<_NotificationCard> {
   Future<void> _handleReject() async {
     final notif = widget.notification;
     final expController = context.read<ExpenseController>();
+    final wsController = context.read<WorkspaceController>();
     final auth = context.read<AuthController>();
     final notifController = context.read<NotificationController>();
+    final currentWs = wsController.currentWorkspace;
 
     final pendingChange = expController.pendingChanges.where((p) => p.id == notif.pendingChangeId).firstOrNull;
     if (pendingChange == null) {
@@ -112,6 +118,8 @@ class _NotificationCardState extends State<_NotificationCard> {
       pendingChange: pendingChange,
       reviewerId: auth.uid,
       reviewerName: auth.displayName,
+      allMemberIds: currentWs?.memberIds,
+      memberNames: currentWs?.memberNames,
     );
     if (!mounted) return;
     setState(() => _isProcessing = false);
@@ -131,10 +139,15 @@ class _NotificationCardState extends State<_NotificationCard> {
     final notif = widget.notification;
     final notifController = context.read<NotificationController>();
     final expController = context.watch<ExpenseController>();
+    final wsController = context.watch<WorkspaceController>();
+    final currentWs = wsController.currentWorkspace;
 
-    final hasPendingAction = notif.isPendingEdit &&
-        notif.pendingChangeId != null &&
-        expController.pendingChanges.any((p) => p.id == notif.pendingChangeId);
+    final pendingChange = notif.pendingChangeId != null
+        ? expController.pendingChanges.where((p) => p.id == notif.pendingChangeId).firstOrNull
+        : null;
+
+    final hasPendingAction = notif.isPendingEdit && pendingChange != null && pendingChange.isPending;
+    final diffItems = pendingChange?.getDetailedDiffs(memberNames: currentWs?.memberNames) ?? [];
 
     return Card(
       color: notif.isRead ? AppColors.surface : AppColors.surfaceElevated.withValues(alpha: 0.7),
@@ -214,15 +227,82 @@ class _NotificationCardState extends State<_NotificationCard> {
                   ),
                 ],
               ),
+              if (hasPendingAction && diffItems.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.cardBorder),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.compare_arrows_rounded, size: 16, color: AppColors.primaryLight),
+                          SizedBox(width: 6),
+                          Text(
+                            'What Changed:',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ...diffItems.map((diff) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(
+                            children: [
+                              Text('${diff.label}: ', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    diff.oldValue,
+                                    style: const TextStyle(fontSize: 11, color: AppColors.error, decoration: TextDecoration.lineThrough),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 6),
+                                child: Icon(Icons.arrow_forward_rounded, size: 12, color: AppColors.textMuted),
+                              ),
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.success.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    diff.newValue,
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.success),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ],
               if (hasPendingAction) ...[
-                const SizedBox(height: 14),
-                const Divider(),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
                       child: CustomButton(
-                        text: 'Approve',
+                        text: 'Accept Edit',
                         icon: Icons.check_circle_outline_rounded,
                         height: 40,
                         backgroundColor: AppColors.primary,
