@@ -338,6 +338,8 @@ class ExpenseController extends ChangeNotifier {
     required String currentUserId,
     required String currentUserName,
     String? partnerId,
+    List<String>? allMemberIds,
+    Map<String, String>? memberNames,
   }) async {
     if (_currentWorkspaceId == null) return false;
 
@@ -363,6 +365,8 @@ class ExpenseController extends ChangeNotifier {
         currentUserId: currentUserId,
         currentUserName: currentUserName,
         partnerId: partnerId,
+        allMemberIds: allMemberIds,
+        memberNames: memberNames,
       );
       _isLoading = false;
       notifyListeners();
@@ -384,6 +388,8 @@ class ExpenseController extends ChangeNotifier {
     required PendingChange pendingChange,
     required String reviewerId,
     required String reviewerName,
+    List<String>? allMemberIds,
+    Map<String, String>? memberNames,
   }) async {
     if (_currentWorkspaceId == null) return false;
 
@@ -397,6 +403,8 @@ class ExpenseController extends ChangeNotifier {
         pendingChange: pendingChange,
         reviewerId: reviewerId,
         reviewerName: reviewerName,
+        allMemberIds: allMemberIds,
+        memberNames: memberNames,
       );
       _isLoading = false;
       notifyListeners();
@@ -418,6 +426,8 @@ class ExpenseController extends ChangeNotifier {
     required PendingChange pendingChange,
     required String reviewerId,
     required String reviewerName,
+    List<String>? allMemberIds,
+    Map<String, String>? memberNames,
   }) async {
     if (_currentWorkspaceId == null) return false;
 
@@ -431,6 +441,8 @@ class ExpenseController extends ChangeNotifier {
         pendingChange: pendingChange,
         reviewerId: reviewerId,
         reviewerName: reviewerName,
+        allMemberIds: allMemberIds,
+        memberNames: memberNames,
       );
       _isLoading = false;
       notifyListeners();

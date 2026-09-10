@@ -150,8 +150,8 @@ class ExpenseRepository {
   }
 
   /// Handles editing an expense.
-  /// Case A: User's own expense -> Direct modification.
-  /// Case B: Partner's expense -> Creates pending change for review without modifying balance.
+  /// If there are partner(s) in the workspace, creates a pending change for partner review & acceptance.
+  /// If the user is the only member, updates the expense directly.
   Future<void> editExpense({
     required String workspaceId,
     required Expense expense,
@@ -168,6 +168,8 @@ class ExpenseRepository {
     required String currentUserId,
     required String currentUserName,
     String? partnerId,
+    List<String>? allMemberIds,
+    Map<String, String>? memberNames,
   }) async {
     final trimmedDesc = newDescription.trim();
     if (trimmedDesc.isEmpty) {
@@ -178,12 +180,15 @@ class ExpenseRepository {
       throw const ExpenseException('Expense amount must be greater than 0.');
     }
 
-    final isOwnExpense = expense.paidBy == currentUserId || expense.createdBy == currentUserId;
+    final otherMembers = (allMemberIds != null && allMemberIds.isNotEmpty)
+        ? allMemberIds.where((id) => id != currentUserId).toList()
+        : (partnerId != null && partnerId.isNotEmpty && partnerId != currentUserId ? [partnerId] : <String>[]);
+
     final now = DateTime.now();
 
     try {
-      if (isOwnExpense) {
-        // CASE A: Direct modification of own expense
+      if (otherMembers.isEmpty) {
+        // Solo workspace: Direct modification
         final batch = _firestore.batch();
         final expDocRef = _expensesRef(workspaceId).doc(expense.id);
         final actDocRef = _activityLogsRef(workspaceId).doc();
@@ -221,29 +226,36 @@ class ExpenseRepository {
           timestamp: now,
         );
         batch.set(actDocRef, activityLog.toMap());
-
-        if (partnerId != null && partnerId.isNotEmpty && partnerId != currentUserId) {
-          final notifDocRef = _userNotificationsRef(partnerId).doc();
-          final notif = AppNotification(
-            id: notifDocRef.id,
-            userId: partnerId,
-            workspaceId: workspaceId,
-            type: AppConstants.notifEditExpense,
-            title: 'Expense Updated',
-            message: '$currentUserName updated $trimmedDesc to ${CurrencyFormatter.format(roundedAmount)}',
-            expenseId: expense.id,
-            createdAt: now,
-          );
-          batch.set(notifDocRef, notif.toMap());
-        }
-
         await batch.commit();
       } else {
-        // CASE B: Partner's expense -> Propose pending change (DO NOT touch official balance/expense)
-        final targetPartnerId = partnerId ?? expense.paidBy;
+        // Shared workspace: Propose pending change for partner approval & notify all partners
+        final primaryPartnerId = otherMembers.first;
         final pendingDocRef = _pendingChangesRef(workspaceId).doc();
         final actDocRef = _activityLogsRef(workspaceId).doc();
-        final notifDocRef = _userNotificationsRef(targetPartnerId).doc();
+
+        final originalValues = <String, dynamic>{
+          'description': expense.description,
+          'amount': expense.amount,
+          'paidBy': expense.paidBy,
+          'category': expense.category,
+          'splitType': expense.splitType,
+          if (expense.splitDetails != null) 'splitDetails': expense.splitDetails,
+          if (expense.splitSingleMemberId != null) 'splitSingleMemberId': expense.splitSingleMemberId,
+          if (expense.receiptUrl != null) 'receiptUrl': expense.receiptUrl,
+          if (expense.receiptPath != null) 'receiptPath': expense.receiptPath,
+        };
+
+        final proposedValues = <String, dynamic>{
+          'description': trimmedDesc,
+          'amount': roundedAmount,
+          'paidBy': newPaidBy,
+          'category': newCategory ?? expense.category,
+          'splitType': newSplitType ?? expense.splitType,
+          if (newSplitDetails != null) 'splitDetails': newSplitDetails,
+          if (newSplitSingleMemberId != null) 'splitSingleMemberId': newSplitSingleMemberId,
+          if (newReceiptUrl != null) 'receiptUrl': newReceiptUrl,
+          if (newReceiptPath != null) 'receiptPath': newReceiptPath,
+        };
 
         final pendingChange = PendingChange(
           id: pendingDocRef.id,
@@ -252,21 +264,14 @@ class ExpenseRepository {
           periodId: expense.periodId,
           requesterId: currentUserId,
           requesterName: currentUserName,
-          partnerId: targetPartnerId,
-          originalValues: {
-            'description': expense.description,
-            'amount': expense.amount,
-            'paidBy': expense.paidBy,
-          },
-          proposedValues: {
-            'description': trimmedDesc,
-            'amount': roundedAmount,
-            'paidBy': newPaidBy,
-          },
+          partnerId: primaryPartnerId,
+          originalValues: originalValues,
+          proposedValues: proposedValues,
           status: AppConstants.pendingChangePending,
           createdAt: now,
         );
 
+        final diffSummary = pendingChange.formatDiffSummary(memberNames: memberNames);
         final resolvedPaidByName = newPaidByName ?? (newPaidBy == currentUserId ? currentUserName : 'Partner');
 
         final activityLog = ActivityLog(
@@ -276,7 +281,7 @@ class ExpenseRepository {
           actorName: currentUserName,
           action: AppConstants.actionProposedEdit,
           expenseId: expense.id,
-          expenseDescription: trimmedDesc,
+          expenseDescription: '$trimmedDesc ($diffSummary)',
           amount: roundedAmount,
           previousAmount: expense.amount,
           paidBy: newPaidBy,
@@ -284,22 +289,26 @@ class ExpenseRepository {
           timestamp: now,
         );
 
-        final notif = AppNotification(
-          id: notifDocRef.id,
-          userId: targetPartnerId,
-          workspaceId: workspaceId,
-          type: AppConstants.notifPendingEdit,
-          title: 'Review Proposed Edit',
-          message: '$currentUserName proposed changing ${expense.description} from ${CurrencyFormatter.format(expense.amount)} to ${CurrencyFormatter.format(roundedAmount)}',
-          expenseId: expense.id,
-          pendingChangeId: pendingDocRef.id,
-          createdAt: now,
-        );
-
         final batch = _firestore.batch();
         batch.set(pendingDocRef, pendingChange.toMap());
         batch.set(actDocRef, activityLog.toMap());
-        batch.set(notifDocRef, notif.toMap());
+
+        // Notify every partner in the workspace with exact change diff
+        for (final recipientId in otherMembers) {
+          final notifDocRef = _userNotificationsRef(recipientId).doc();
+          final notif = AppNotification(
+            id: notifDocRef.id,
+            userId: recipientId,
+            workspaceId: workspaceId,
+            type: AppConstants.notifPendingEdit,
+            title: 'Edit Requested: ${expense.description}',
+            message: '$currentUserName proposed changes: $diffSummary',
+            expenseId: expense.id,
+            pendingChangeId: pendingDocRef.id,
+            createdAt: now,
+          );
+          batch.set(notifDocRef, notif.toMap());
+        }
 
         await batch.commit();
       }
@@ -313,6 +322,8 @@ class ExpenseRepository {
     required PendingChange pendingChange,
     required String reviewerId,
     required String reviewerName,
+    List<String>? allMemberIds,
+    Map<String, String>? memberNames,
   }) async {
     try {
       final now = DateTime.now();
@@ -321,7 +332,6 @@ class ExpenseRepository {
       final pendingDocRef = _pendingChangesRef(workspaceId).doc(pendingChange.id);
       final expDocRef = _expensesRef(workspaceId).doc(pendingChange.expenseId);
       final actDocRef = _activityLogsRef(workspaceId).doc();
-      final notifDocRef = _userNotificationsRef(pendingChange.requesterId).doc();
 
       // 1. Update pending change status to APPROVED
       batch.update(pendingDocRef, {
@@ -329,13 +339,36 @@ class ExpenseRepository {
         'reviewedAt': Timestamp.fromDate(now),
       });
 
-      // 2. Officially update the expense (this updates the authoritative balance!)
-      batch.update(expDocRef, {
+      // 2. Officially update the expense with all proposed fields
+      final expUpdate = <String, dynamic>{
         'description': pendingChange.proposedDescription,
         'amount': pendingChange.proposedAmount,
         'paidBy': pendingChange.proposedPaidBy,
         'updatedAt': Timestamp.fromDate(now),
-      });
+      };
+
+      if (pendingChange.proposedCategory != null) {
+        expUpdate['category'] = pendingChange.proposedCategory;
+      }
+      if (pendingChange.proposedSplitType != null) {
+        expUpdate['splitType'] = pendingChange.proposedSplitType;
+      }
+      if (pendingChange.proposedSplitDetails != null) {
+        expUpdate['splitDetails'] = pendingChange.proposedSplitDetails;
+      }
+      if (pendingChange.proposedSplitSingleMemberId != null) {
+        expUpdate['splitSingleMemberId'] = pendingChange.proposedSplitSingleMemberId;
+      }
+      if (pendingChange.proposedReceiptUrl != null) {
+        expUpdate['receiptUrl'] = pendingChange.proposedReceiptUrl;
+      }
+      if (pendingChange.proposedReceiptPath != null) {
+        expUpdate['receiptPath'] = pendingChange.proposedReceiptPath;
+      }
+
+      batch.update(expDocRef, expUpdate);
+
+      final diffSummary = pendingChange.formatDiffSummary(memberNames: memberNames);
 
       // 3. Log activity
       final activityLog = ActivityLog(
@@ -345,27 +378,34 @@ class ExpenseRepository {
         actorName: reviewerName,
         action: AppConstants.actionApprovedEdit,
         expenseId: pendingChange.expenseId,
-        expenseDescription: pendingChange.proposedDescription,
+        expenseDescription: '${pendingChange.proposedDescription} ($diffSummary)',
         amount: pendingChange.proposedAmount,
         previousAmount: pendingChange.originalAmount,
         paidBy: pendingChange.proposedPaidBy,
-        paidByName: pendingChange.proposedPaidBy == reviewerId ? reviewerName : pendingChange.requesterName,
+        paidByName: memberNames?[pendingChange.proposedPaidBy] ?? pendingChange.proposedPaidBy,
         timestamp: now,
       );
       batch.set(actDocRef, activityLog.toMap());
 
-      // 4. Notify requester
-      final notif = AppNotification(
-        id: notifDocRef.id,
-        userId: pendingChange.requesterId,
-        workspaceId: workspaceId,
-        type: AppConstants.notifEditApproved,
-        title: 'Edit Approved',
-        message: '$reviewerName approved your edit on "${pendingChange.proposedDescription}" (${CurrencyFormatter.format(pendingChange.proposedAmount)})',
-        expenseId: pendingChange.expenseId,
-        createdAt: now,
-      );
-      batch.set(notifDocRef, notif.toMap());
+      // 4. Notify all partners and requester about approval with diff
+      final recipients = (allMemberIds != null && allMemberIds.isNotEmpty)
+          ? allMemberIds.where((id) => id != reviewerId).toSet()
+          : {pendingChange.requesterId};
+
+      for (final recipientId in recipients) {
+        final notifDocRef = _userNotificationsRef(recipientId).doc();
+        final notif = AppNotification(
+          id: notifDocRef.id,
+          userId: recipientId,
+          workspaceId: workspaceId,
+          type: AppConstants.notifEditApproved,
+          title: 'Edit Accepted: ${pendingChange.proposedDescription}',
+          message: '$reviewerName accepted edit on "${pendingChange.proposedDescription}". ($diffSummary)',
+          expenseId: pendingChange.expenseId,
+          createdAt: now,
+        );
+        batch.set(notifDocRef, notif.toMap());
+      }
 
       await batch.commit();
     } catch (e) {
@@ -378,6 +418,8 @@ class ExpenseRepository {
     required PendingChange pendingChange,
     required String reviewerId,
     required String reviewerName,
+    List<String>? allMemberIds,
+    Map<String, String>? memberNames,
   }) async {
     try {
       final now = DateTime.now();
@@ -385,9 +427,8 @@ class ExpenseRepository {
 
       final pendingDocRef = _pendingChangesRef(workspaceId).doc(pendingChange.id);
       final actDocRef = _activityLogsRef(workspaceId).doc();
-      final notifDocRef = _userNotificationsRef(pendingChange.requesterId).doc();
 
-      // 1. Update pending change status to REJECTED (Official expense is untouched)
+      // 1. Update pending change status to REJECTED
       batch.update(pendingDocRef, {
         'status': AppConstants.pendingChangeRejected,
         'reviewedAt': Timestamp.fromDate(now),
@@ -408,18 +449,25 @@ class ExpenseRepository {
       );
       batch.set(actDocRef, activityLog.toMap());
 
-      // 3. Notify requester
-      final notif = AppNotification(
-        id: notifDocRef.id,
-        userId: pendingChange.requesterId,
-        workspaceId: workspaceId,
-        type: AppConstants.notifEditRejected,
-        title: 'Edit Declined',
-        message: '$reviewerName declined your proposed edit on "${pendingChange.originalDescription}"',
-        expenseId: pendingChange.expenseId,
-        createdAt: now,
-      );
-      batch.set(notifDocRef, notif.toMap());
+      // 3. Notify requester and other partners
+      final recipients = (allMemberIds != null && allMemberIds.isNotEmpty)
+          ? allMemberIds.where((id) => id != reviewerId).toSet()
+          : {pendingChange.requesterId};
+
+      for (final recipientId in recipients) {
+        final notifDocRef = _userNotificationsRef(recipientId).doc();
+        final notif = AppNotification(
+          id: notifDocRef.id,
+          userId: recipientId,
+          workspaceId: workspaceId,
+          type: AppConstants.notifEditRejected,
+          title: 'Edit Declined: ${pendingChange.originalDescription}',
+          message: '$reviewerName declined proposed edit on "${pendingChange.originalDescription}".',
+          expenseId: pendingChange.expenseId,
+          createdAt: now,
+        );
+        batch.set(notifDocRef, notif.toMap());
+      }
 
       await batch.commit();
     } catch (e) {
