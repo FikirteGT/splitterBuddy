@@ -61,11 +61,21 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
     }
 
     final auth = context.read<AuthController>();
+    final wsController = context.read<WorkspaceController>();
+    final currentWs = wsController.currentWorkspace;
     final recurringController = context.read<RecurringExpenseController>();
     final desc = _descController.text.trim();
     final messenger = ScaffoldMessenger.of(context);
 
+    if (currentWs == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Please select or create a workspace first.'), backgroundColor: AppColors.error),
+      );
+      return;
+    }
+
     final success = await recurringController.createRecurringExpense(
+      workspaceId: currentWs.id,
       description: desc,
       amount: amount,
       paidBy: _selectedPaidBy,
@@ -243,15 +253,17 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
                       children: [
                         const Icon(Icons.calendar_today_outlined, size: 18, color: AppColors.primaryLight),
                         const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('First Occurrence Date', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
-                            Text(
-                              DateFormatter.formatDateOnly(_firstDueDate),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                            ),
-                          ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('First Occurrence Date', style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                              Text(
+                                DateFormatter.formatDateOnly(_firstDueDate),
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -266,7 +278,7 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
                   children: [
                     Expanded(
                       child: ChoiceChip(
-                        label: Text('You (${auth.displayName})'),
+                        label: Text('You (${auth.displayName})', overflow: TextOverflow.ellipsis),
                         selected: _selectedPaidBy == auth.uid,
                         onSelected: (selected) {
                           if (selected) setState(() => _selectedPaidBy = auth.uid);
@@ -283,7 +295,7 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ChoiceChip(
-                          label: Text(partnerName),
+                          label: Text(partnerName, overflow: TextOverflow.ellipsis),
                           selected: _selectedPaidBy == partnerId,
                           onSelected: (selected) {
                             if (selected) setState(() => _selectedPaidBy = partnerId);
@@ -311,9 +323,9 @@ class _AddRecurringExpenseScreenState extends State<AddRecurringExpenseScreen> {
                       auth.uid,
                       ?partnerId,
                     ];
-                    final memberNames = {
+                    final memberNames = <String, String>{
                       auth.uid: 'You (${auth.displayName})',
-                      if (partnerId != null) partnerId: partnerName,
+                      ?partnerId: partnerName,
                     };
                     final result = await SplitConfigSheet.show(
                       context,

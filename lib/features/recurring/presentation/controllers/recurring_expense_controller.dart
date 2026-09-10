@@ -55,6 +55,7 @@ class RecurringExpenseController extends ChangeNotifier {
   }
 
   Future<bool> createRecurringExpense({
+    String? workspaceId,
     required String description,
     required double amount,
     required String paidBy,
@@ -67,15 +68,24 @@ class RecurringExpenseController extends ChangeNotifier {
     required String createdBy,
     required String currentUserName,
   }) async {
-    if (_currentWorkspaceId == null) return false;
+    final targetWorkspaceId = (workspaceId != null && workspaceId.isNotEmpty)
+        ? workspaceId
+        : _currentWorkspaceId;
 
+    if (targetWorkspaceId == null || targetWorkspaceId.isEmpty) {
+      _errorMessage = 'No active workspace selected.';
+      notifyListeners();
+      return false;
+    }
+
+    _currentWorkspaceId ??= targetWorkspaceId;
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       await _repository.createRecurringExpense(
-        workspaceId: _currentWorkspaceId!,
+        workspaceId: targetWorkspaceId,
         description: description,
         amount: amount,
         paidBy: paidBy,
