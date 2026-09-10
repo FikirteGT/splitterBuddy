@@ -92,6 +92,51 @@ void main() {
       expect(pendingChange.proposedAmount, 1200.0);
     });
 
+    test('PendingChange formatDiffSummary generates human-readable what changed to what', () {
+      final now = DateTime.now();
+      final pendingChange = PendingChange(
+        id: 'pc_1',
+        expenseId: 'exp_1',
+        workspaceId: 'ws_1',
+        periodId: 'period_1',
+        requesterId: 'user_b',
+        requesterName: 'Yeabsira',
+        partnerId: 'user_a',
+        originalValues: {
+          'description': 'Groceries',
+          'amount': 1000.0,
+          'paidBy': 'user_a',
+          'category': 'Food',
+          'splitType': 'EQUAL',
+        },
+        proposedValues: {
+          'description': 'Groceries & Household',
+          'amount': 1200.0,
+          'paidBy': 'user_b',
+          'category': 'Shopping',
+          'splitType': 'CUSTOM',
+        },
+        status: AppConstants.pendingChangePending,
+        createdAt: now,
+      );
+
+      final summary = pendingChange.formatDiffSummary(memberNames: {'user_a': 'User A', 'user_b': 'User B'});
+      expect(summary, contains('Description: "Groceries" ➔ "Groceries & Household"'));
+      expect(summary, contains('Amount: 1000.00 ETB ➔ 1200.00 ETB'));
+      expect(summary, contains('Category: Food ➔ Shopping'));
+      expect(summary, contains('Paid By: User A ➔ User B'));
+      expect(summary, contains('Split: EQUAL ➔ CUSTOM'));
+
+      final diffs = pendingChange.getDetailedDiffs(memberNames: {'user_a': 'User A', 'user_b': 'User B'});
+      expect(diffs.length, 5);
+      expect(diffs[0].label, 'Description');
+      expect(diffs[0].oldValue, 'Groceries');
+      expect(diffs[0].newValue, 'Groceries & Household');
+      expect(diffs[1].label, 'Amount');
+      expect(diffs[1].oldValue, '1000.00 ETB');
+      expect(diffs[1].newValue, '1200.00 ETB');
+    });
+
     test('Soft-deleted expense updates status and preserves history', () {
       final now = DateTime.now();
       final expense = Expense(
