@@ -55,17 +55,20 @@ class WorkspaceListScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Workspaces'),
       ),
-      body: workspaces.isEmpty
+        body: workspaces.isEmpty
           ? EmptyStateView(
               icon: Icons.home_work_outlined,
               title: "You don't have a workspace yet",
               subtitle: 'Create a new workspace or enter an invitation code to start splitting expenses with your partner.',
               buttonText: 'Create Workspace',
               buttonIcon: Icons.add_rounded,
-              onButtonPressed: () {
-                Navigator.of(context).push(
+              onButtonPressed: () async {
+                final created = await Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const CreateWorkspaceScreen()),
                 );
+                if (created != null && context.mounted) {
+                  Navigator.of(context).pop(created);
+                }
               },
             )
           : ListView(
@@ -256,10 +259,13 @@ class WorkspaceListScreen extends StatelessWidget {
                 CustomButton(
                   text: 'Create New Workspace',
                   icon: Icons.add_rounded,
-                  onPressed: () {
-                    Navigator.of(context).push(
+                  onPressed: () async {
+                    final created = await Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const CreateWorkspaceScreen()),
                     );
+                    if (created != null && context.mounted) {
+                      Navigator.of(context).pop(created);
+                    }
                   },
                 ),
                 const SizedBox(height: 12),
@@ -267,10 +273,13 @@ class WorkspaceListScreen extends StatelessWidget {
                   text: 'Join with Invitation Code',
                   icon: Icons.vpn_key_outlined,
                   isOutlined: true,
-                  onPressed: () {
-                    Navigator.of(context).push(
+                  onPressed: () async {
+                    final joined = await Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const JoinWorkspaceScreen()),
                     );
+                    if (joined != null && context.mounted) {
+                      Navigator.of(context).pop(joined);
+                    }
                   },
                 ),
               ],

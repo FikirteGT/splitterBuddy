@@ -45,7 +45,7 @@ class _JoinWorkspaceScreenState extends State<JoinWorkspaceScreen> {
           backgroundColor: AppColors.success,
         ),
       );
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(joinedWs);
     } else if (wsController.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
