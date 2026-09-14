@@ -107,6 +107,7 @@ class WorkspaceListScreen extends StatelessWidget {
                             duration: const Duration(seconds: 1),
                           ),
                         );
+                        Navigator.of(context).pop(ws);
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(16),
