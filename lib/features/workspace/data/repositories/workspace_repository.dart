@@ -8,10 +8,12 @@ import 'package:splitterbuddy/features/workspace/domain/models/expense_period.da
 import 'package:splitterbuddy/features/workspace/domain/models/workspace.dart';
 
 class WorkspaceRepository {
-  final FirebaseFirestore _firestore;
+  final FirebaseFirestore? _customFirestore;
 
   WorkspaceRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+      : _customFirestore = firestore;
+
+  FirebaseFirestore get _firestore => _customFirestore ?? FirebaseFirestore.instance;
 
   CollectionReference get _workspacesRef =>
       _firestore.collection(AppConstants.workspacesCollection);
