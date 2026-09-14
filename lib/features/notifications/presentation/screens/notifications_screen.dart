@@ -5,6 +5,7 @@ import 'package:splitterbuddy/core/utils/date_formatter.dart';
 import 'package:splitterbuddy/features/authentication/presentation/controllers/auth_controller.dart';
 import 'package:splitterbuddy/features/expenses/presentation/controllers/expense_controller.dart';
 import 'package:splitterbuddy/features/notifications/domain/models/app_notification.dart';
+import 'package:splitterbuddy/features/notifications/presentation/controllers/notification_controller.dart';
 import 'package:splitterbuddy/features/workspace/presentation/controllers/workspace_controller.dart';
 import 'package:splitterbuddy/shared/widgets/custom_button.dart';
 import 'package:splitterbuddy/shared/widgets/empty_state_view.dart';
