@@ -83,9 +83,19 @@ class WorkspaceController extends ChangeNotifier {
   }
 
   void selectWorkspace(Workspace workspace) {
+    if (_currentWorkspace?.id == workspace.id) {
+      _currentWorkspace = workspace;
+      if (_currentPeriod?.id != workspace.activePeriodId && workspace.activePeriodId.isNotEmpty) {
+        _listenToPeriod(workspace.id, workspace.activePeriodId);
+      }
+      notifyListeners();
+      return;
+    }
     _currentWorkspace = workspace;
     _listenToWorkspaceUpdates(workspace.id);
-    _listenToPeriod(workspace.id, workspace.activePeriodId);
+    if (workspace.activePeriodId.isNotEmpty) {
+      _listenToPeriod(workspace.id, workspace.activePeriodId);
+    }
     notifyListeners();
   }
 
@@ -94,8 +104,9 @@ class WorkspaceController extends ChangeNotifier {
     _currentWorkspaceSubscription = _workspaceRepository.streamWorkspace(workspaceId).listen(
       (ws) {
         if (ws != null) {
+          final periodChanged = _currentPeriod?.id != ws.activePeriodId;
           _currentWorkspace = ws;
-          if (_currentPeriod?.id != ws.activePeriodId) {
+          if (periodChanged && ws.activePeriodId.isNotEmpty) {
             _listenToPeriod(ws.id, ws.activePeriodId);
           }
           notifyListeners();
@@ -105,6 +116,7 @@ class WorkspaceController extends ChangeNotifier {
   }
 
   void _listenToPeriod(String workspaceId, String periodId) {
+    if (periodId.isEmpty) return;
     _currentPeriodSubscription?.cancel();
     _currentPeriodSubscription = _workspaceRepository.streamActivePeriod(workspaceId, periodId).listen(
       (period) {
