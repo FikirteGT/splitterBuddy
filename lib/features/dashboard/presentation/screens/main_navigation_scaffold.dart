@@ -33,6 +33,11 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     ProfileScreen(),
   ];
 
+  String? _syncedWorkspaceId;
+  String? _syncedPeriodId;
+  String? _syncedUserId;
+  DateTime? _lastRecurringProcessedAt;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -53,17 +58,32 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
     final budgetController = context.read<BudgetController>();
 
     final user = auth.currentUser;
-    if (user != null) {
+    final currentWs = wsController.currentWorkspace;
+    final currentPeriod = wsController.currentPeriod;
+
+    final currentWsId = currentWs?.id;
+    final currentPeriodId = currentPeriod?.id ?? currentWs?.activePeriodId;
+    final currentUid = user?.uid;
+
+    final userChanged = _syncedUserId != currentUid;
+    final workspaceChanged = _syncedWorkspaceId != currentWsId || _syncedPeriodId != currentPeriodId;
+
+    if (!userChanged && !workspaceChanged) {
+      return;
+    }
+
+    _syncedUserId = currentUid;
+    _syncedWorkspaceId = currentWsId;
+    _syncedPeriodId = currentPeriodId;
+
+    if (user != null && userChanged) {
       wsController.updateUserId(user.uid);
       notifController.updateUserId(user.uid);
     }
 
-    final currentWs = wsController.currentWorkspace;
-    final currentPeriod = wsController.currentPeriod;
-
     if (currentWs != null) {
       historyController.updateWorkspace(currentWs.id);
-      settlementController.updateWorkspace(currentWs.id);
+      settlementController.updateWorkspace(currentWs.id, activePeriodId: currentPeriodId);
       recurringController.updateWorkspace(currentWs.id);
       budgetController.updateWorkspace(currentWs.id);
 
@@ -72,27 +92,24 @@ class _MainNavigationScaffoldState extends State<MainNavigationScaffold> {
 
       expController.updateContext(
         workspaceId: currentWs.id,
-        periodId: currentPeriod?.id ?? currentWs.activePeriodId,
+        periodId: currentPeriodId,
         currentUserId: auth.uid,
         partnerId: partnerId,
         partnerName: partnerName,
       );
 
-      // Check and process due recurring expenses
-      recurringController.checkAndProcessDue(
-        activePeriodId: currentPeriod?.id ?? currentWs.activePeriodId,
-        currentUserId: auth.uid,
-        currentUserName: auth.displayName,
-        partnerId: partnerId,
-      );
-
-      // Evaluate budget alerts
-      if (expController.activeExpenses.isNotEmpty) {
-        budgetController.evaluateBudgetAlerts(
-          expenses: expController.activeExpenses,
-          currentUserId: auth.uid,
-          memberIds: currentWs.members,
-        );
+      // Process due recurring expenses throttled once per workspace/period switch
+      if (workspaceChanged && currentPeriodId != null && currentPeriodId.isNotEmpty) {
+        final now = DateTime.now();
+        if (_lastRecurringProcessedAt == null || now.difference(_lastRecurringProcessedAt!).inMinutes >= 5) {
+          _lastRecurringProcessedAt = now;
+          recurringController.checkAndProcessDue(
+            activePeriodId: currentPeriodId,
+            currentUserId: auth.uid,
+            currentUserName: auth.displayName,
+            partnerId: partnerId,
+          );
+        }
       }
     }
   }
